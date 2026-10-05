@@ -31,6 +31,7 @@ export interface SiteSettings {
   instagram_url: string;
   linkedin_url: string;
   tiktok_url: string;
+  snapchat_url: string;
   youtube_url: string;
   cr_number: string;
   vat_number: string;
@@ -78,6 +79,7 @@ const defaultSettings: SiteSettings = {
   instagram_url: '',
   linkedin_url: '',
   tiktok_url: '',
+  snapchat_url: '',
   youtube_url: '',
   cr_number: '',
   vat_number: '',

@@ -265,10 +265,11 @@ function SettingsManager({ lang }: { lang: 'ar' | 'en' }) {
         <h3 className="text-sm font-bold text-base-primary border-b border-base pb-2">{isRtl ? 'وسائل التواصل الاجتماعي' : 'Social Media'}</h3>
         <div className="grid grid-cols-2 gap-3">
           <div><label className={labelClass}>{isRtl ? 'فيسبوك' : 'Facebook'}</label><input className={inputClass} value={settings.facebook_url} onChange={(e) => update('facebook_url', e.target.value)} /></div>
-          <div><label className={labelClass}>{isRtl ? 'تويتر' : 'Twitter'}</label><input className={inputClass} value={settings.twitter_url} onChange={(e) => update('twitter_url', e.target.value)} /></div>
+          <div><label className={labelClass}>{isRtl ? 'منصة إكس' : 'X'}</label><input className={inputClass} value={settings.twitter_url} onChange={(e) => update('twitter_url', e.target.value)} /></div>
           <div><label className={labelClass}>{isRtl ? 'انستجرام' : 'Instagram'}</label><input className={inputClass} value={settings.instagram_url} onChange={(e) => update('instagram_url', e.target.value)} /></div>
           <div><label className={labelClass}>{isRtl ? 'لينكدإن' : 'LinkedIn'}</label><input className={inputClass} value={settings.linkedin_url} onChange={(e) => update('linkedin_url', e.target.value)} /></div>
           <div><label className={labelClass}>{isRtl ? 'تيك توك' : 'TikTok'}</label><input className={inputClass} value={settings.tiktok_url} onChange={(e) => update('tiktok_url', e.target.value)} /></div>
+          <div><label className={labelClass}>{isRtl ? 'سناب شات' : 'Snapchat'}</label><input className={inputClass} value={settings.snapchat_url} onChange={(e) => update('snapchat_url', e.target.value)} /></div>
           <div><label className={labelClass}>{isRtl ? 'يوتيوب' : 'YouTube'}</label><input className={inputClass} value={settings.youtube_url} onChange={(e) => update('youtube_url', e.target.value)} /></div>
         </div>
       </div>
