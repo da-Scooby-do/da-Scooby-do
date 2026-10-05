@@ -29,7 +29,7 @@ export default function EquipmentCategorySection() {
               <button
                 key={cat.id}
                 onClick={() => navigate({ level: 'brands', categoryId: cat.id })}
-                className="card-industrial hover-lift group cursor-pointer animate-scale-in text-start w-full"
+                data-tilt className="card-industrial hover-lift group cursor-pointer animate-scale-in text-start w-full"
                 style={{ animationDelay: `${(i % 4) * 0.08}s` }}
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-black">

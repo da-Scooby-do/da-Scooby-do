@@ -16,7 +16,7 @@ export default function CategoryCard({ name, image, index }: CategoryCardProps) 
   return (
     <button
       onClick={() => category && navigate({ level: 'brands', categoryId: category.id })}
-      className="card-industrial hover-lift group cursor-pointer animate-scale-in text-start w-full"
+      data-tilt className="card-industrial hover-lift group cursor-pointer animate-scale-in text-start w-full"
       style={{ animationDelay: `${(index % 5) * 0.08}s` }}
     >
       {/* Image */}

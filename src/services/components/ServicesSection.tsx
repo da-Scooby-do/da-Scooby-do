@@ -45,7 +45,7 @@ export default function ServicesSection() {
               <button
                 key={cat.id}
                 onClick={() => goTo(cat.id)}
-                className="card-industrial p-6 lg:p-8 hover-lift group text-start animate-fade-in-up"
+                data-tilt className="card-industrial p-6 lg:p-8 hover-lift group text-start animate-fade-in-up"
                 style={{ animationDelay: `${(i % 3) * 0.1}s` }}
               >
                 <div className="flex items-start gap-5 mb-4">

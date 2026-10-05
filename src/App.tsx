@@ -27,6 +27,8 @@ import ServicesSection from '@/services/components/ServicesSection';
 import Company from '@/components/Company';
 import CTA from '@/components/CTA';
 import Footer from '@/components/Footer';
+import FloatingActions from '@/components/FloatingActions';
+import { useAnchorScroll, useCinematicEffects } from '@/hooks/useCinematicEffects';
 import LegalPageView from '@/components/LegalPageView';
 import CatalogRouter from '@/catalog/CatalogRouter';
 import ServicesRouter from '@/services/ServicesRouter';
@@ -58,6 +60,8 @@ function useRouteType() {
 
 function App() {
   const routeType = useRouteType();
+  useCinematicEffects();
+  useAnchorScroll();
 
   if (routeType === 'admin') {
     return (
@@ -135,6 +139,7 @@ function App() {
             <Header />
             <main><CatalogRouter /></main>
             <Footer />
+            <FloatingActions />
           </div>
         </CatalogProvider>
         </RentalProvider>
@@ -152,6 +157,7 @@ function App() {
             <Header />
             <main><ServicesRouter /></main>
             <Footer />
+            <FloatingActions />
           </div>
         </ServicesProvider>
         </SiteContentProvider>
@@ -188,6 +194,7 @@ function App() {
             <CTA />
           </main>
           <Footer />
+          <FloatingActions />
         </div>
       </CatalogProvider>
       </RentalProvider>

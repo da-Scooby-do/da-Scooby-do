@@ -198,7 +198,8 @@ body[dir='ltr'] {
   transform: translateY(-6px);
 }
 
-/* Button styles */
+/* Button styles (components layer, so utility classes such as `hidden` can override them) */
+@layer components {
 .btn-primary {
   background-color: var(--color-yellow);
   color: #0a0a0a;
@@ -234,6 +235,8 @@ body[dir='ltr'] {
   border-color: var(--color-yellow);
   color: var(--color-yellow);
   transform: translateY(-2px);
+}
+
 }
 
 /* Card styles */
@@ -276,4 +279,139 @@ body[dir='ltr'] {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ─── Cinematic motion layer ─────────────────────────────────── */
+
+/* Anchored sections clear the fixed header */
+section[id] {
+  scroll-margin-top: 72px;
+}
+
+/* Entrance animations wait (frozen on their first frame) until scrolled into view */
+.reveal-wait {
+  animation-play-state: paused !important;
+}
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(36px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+[data-reveal].is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* Pointer-following tilt + glare on cards (mouse devices only) */
+.tilt-card {
+  position: relative;
+  transform-style: preserve-3d;
+  will-change: transform;
+  transition: transform 0.25s ease-out, border-color 0.4s ease, box-shadow 0.4s ease;
+}
+.tilt-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  background: radial-gradient(420px circle at var(--glare-x, 50%) var(--glare-y, 50%), rgba(255, 209, 0, 0.14), transparent 45%);
+}
+.tilt-card:hover::after {
+  opacity: 1;
+}
+
+/* Hero: slow cinematic push-in on the background photo */
+@keyframes kenBurns {
+  from { transform: scale(1.08) translate3d(0, 0, 0); }
+  to { transform: scale(1.22) translate3d(-2%, -1.5%, 0); }
+}
+.hero-kenburns {
+  animation: kenBurns 22s ease-out both;
+  transform-origin: 60% 40%;
+}
+
+/* Hero headline: words rise out of a mask one after another */
+@keyframes wordRise {
+  from { transform: translateY(110%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.word-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: bottom;
+  padding-bottom: 0.08em;
+}
+.word-mask > span {
+  display: inline-block;
+  animation: wordRise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Film grain + vignette overlay for the hero */
+.film-grain {
+  pointer-events: none;
+  opacity: 0.07;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+.vignette {
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(0, 0, 0, 0.65) 100%);
+}
+
+/* Light sweep across primary buttons */
+@layer components {
+  .btn-primary {
+    position: relative;
+    overflow: hidden;
+  }
+}
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.7s ease;
+  pointer-events: none;
+}
+.btn-primary:hover::before {
+  left: 125%;
+}
+
+/* Mobile menu: links slide in one after another */
+@keyframes menuItemIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.menu-item-in {
+  animation: menuItemIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Larger tap targets on touch screens */
+@media (pointer: coarse) {
+  .btn-primary,
+  .btn-secondary {
+    min-height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+  }
 }

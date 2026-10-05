@@ -31,6 +31,8 @@ interface StaffProfileRow {
 interface EmployeeContextValue {
   session: { user: { id: string; email: string } } | null;
   authLoading: boolean;
+  /** user id whose staff profile lookup has finished (null until the first lookup completes) */
+  staffCheckedFor: string | null;
   currentEmployee: Employee | null;
   currentRole: Role | null;
   roles: Role[];
@@ -82,6 +84,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<{ user: { id: string; email: string } } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
+  const [staffCheckedFor, setStaffCheckedFor] = useState<string | null>(null);
   const [currentRole, setCurrentRole] = useState<Role | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -115,6 +118,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
     } catch {
       // keep empty state
     } finally {
+      if (userId) setStaffCheckedFor(userId);
       setLoading(false);
     }
   };
@@ -238,7 +242,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   return (
     <EmployeeContext.Provider
       value={{
-        session, authLoading, currentEmployee, currentRole, roles, employees, loading,
+        session, authLoading, staffCheckedFor, currentEmployee, currentRole, roles, employees, loading,
         signIn, signOut, signUp, can, createRole, updateRole, deleteRole,
         updateEmployee, deleteEmployee, reload,
       }}

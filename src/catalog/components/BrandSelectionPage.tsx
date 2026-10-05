@@ -53,7 +53,7 @@ export default function BrandSelectionPage() {
             <button
               key={brand.id}
               onClick={() => navigate({ level: 'models', categoryId: route.categoryId!, brandId: brand.id })}
-              className="card-industrial hover-lift group p-6 lg:p-8 text-center animate-scale-in"
+              data-tilt className="card-industrial hover-lift group p-6 lg:p-8 text-center animate-scale-in"
               style={{ animationDelay: `${(i % 4) * 0.08}s` }}
             >
               {/* Brand logo placeholder */}
