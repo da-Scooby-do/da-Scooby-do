@@ -1,9 +1,17 @@
 import {
   Phone, Mail, MapPin, Clock, MessageCircle, FileText,
-  Facebook, Instagram, Linkedin, Youtube, ArrowRight, ShieldCheck,
+  Facebook, Instagram, Linkedin, Youtube, ArrowRight, ShieldCheck, Ghost,
 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useSiteContent } from '@/contexts/SiteContentContext';
+
+function XIcon({ size = 15 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+  );
+}
 
 export default function Footer() {
   const { t, lang, dir } = useApp();
@@ -49,6 +57,13 @@ export default function Footer() {
     { icon: Youtube, url: settings?.youtube_url },
     { icon: Facebook, url: settings?.facebook_url },
     { icon: Linkedin, url: settings?.linkedin_url },
+    { icon: XIcon, url: settings?.twitter_url },
+  ].filter((s) => s.url);
+
+  const followLinks = [
+    { icon: XIcon, label: isRtl ? 'منصة إكس' : 'X', url: settings?.twitter_url },
+    { icon: Linkedin, label: isRtl ? 'لينكدإن' : 'LinkedIn', url: settings?.linkedin_url },
+    { icon: Ghost, label: isRtl ? 'سناب شات' : 'Snapchat', url: settings?.snapchat_url },
   ].filter((s) => s.url);
 
   const copyrightText = isRtl
@@ -128,7 +143,7 @@ export default function Footer() {
                 <li>
                   <a href={`tel:${phone}`} className="flex items-center gap-2.5 text-sm text-base-muted hover:text-yellow-accent transition-colors">
                     <Phone size={15} className="text-yellow-accent flex-shrink-0" />
-                    <span>{phone}</span>
+                    <span dir="ltr">{phone}</span>
                   </a>
                 </li>
               )}
@@ -136,7 +151,7 @@ export default function Footer() {
                 <li>
                   <a href={`https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-sm text-base-muted hover:text-yellow-accent transition-colors">
                     <MessageCircle size={15} className="text-yellow-accent flex-shrink-0" />
-                    <span>{whatsapp}</span>
+                    <span dir="ltr">{whatsapp}</span>
                   </a>
                 </li>
               )}
@@ -236,6 +251,29 @@ export default function Footer() {
                 >
                   <FileText size={11} />
                   {isRtl ? page.title_ar : page.title_en}
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Follow us bar */}
+        {followLinks.length > 0 && (
+          <div className="mt-6 pt-5 border-t border-base">
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-3">
+              <span className="text-xs font-bold text-base-muted uppercase tracking-wider">
+                {isRtl ? 'تابعنا' : 'Follow us'}:
+              </span>
+              {followLinks.map((link) => (
+                <a
+                  key={link.label}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-sm text-base-muted hover:text-yellow-accent transition-colors"
+                >
+                  <link.icon size={15} />
+                  {link.label}
                 </a>
               ))}
             </div>
