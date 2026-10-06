@@ -7,8 +7,9 @@ import { useEmployee } from '@/admin/EmployeeContext';
 import { useCatalogData } from '@/catalog/useCatalogData';
 import { useQuotation } from '@/quotation/QuotationContext';
 import DBQuotationForm from '@/quotation/components/DBQuotationForm';
+import TermsAcceptanceBadge from './TermsAcceptanceBadge';
 import { supabase } from '@/lib/supabase';
-import { statusLabels as rentalStatusLabels, statusColors as rentalStatusColors, durationLabels, allStatuses as allRentalStatuses } from '@/rental/types';
+import { statusLabels as rentalStatusLabels, statusColors as rentalStatusColors, durationLabels, allStatuses as allRentalStatuses, responsiblePartyLabels } from '@/rental/types';
 import type { RentalRequestRow, RentalRequestStatus } from '@/rental/types';
 import { dbStatusLabels, dbStatusColors, allProjectDBStatuses, serviceCategoryLabels, expectedStartLabels } from '@/project/types';
 import type { ProjectRequestRow, ProjectRequestDBStatus } from '@/project/types';
@@ -238,6 +239,8 @@ export default function RequestsCenter() {
         <Section title={ar ? 'الإيجار' : 'Rental'} icon={Calendar}>
           <Field label={ar ? 'مدة الإيجار' : 'Rental Period'} value={ar ? durationLabels[r.rental_period].ar : durationLabels[r.rental_period].en} />
           <Field label={ar ? 'تاريخ البدء' : 'Start Date'} value={r.requested_start_date || '—'} />
+          <Field label={ar ? 'نقل المعدة' : 'Transport'} value={r.transport_by ? (ar ? responsiblePartyLabels[r.transport_by].ar : responsiblePartyLabels[r.transport_by].en) : '—'} />
+          <Field label={ar ? 'الديزل' : 'Diesel'} value={r.fuel_by ? (ar ? responsiblePartyLabels[r.fuel_by].ar : responsiblePartyLabels[r.fuel_by].en) : '—'} />
           <Field label={ar ? 'الموقع' : 'Project Location'} value={[r.project_city, r.project_location].filter(Boolean).join(' — ') || '—'} />
           {r.notes && <Field label={ar ? 'ملاحظات' : 'Notes'} value={r.notes} />}
         </Section>
@@ -403,6 +406,12 @@ export default function RequestsCenter() {
                 <Field label={ar ? 'تاريخ الإنشاء' : 'Created'} value={formatDate(viewing.createdAt)} />
                 <Field label={ar ? 'آخر تحديث' : 'Updated'} value={formatDate(viewing.updatedAt)} />
               </Section>
+
+              <TermsAcceptanceBadge
+                accepted={viewing.rawRental?.terms_accepted ?? viewing.rawProject?.terms_accepted}
+                acceptedAt={viewing.rawRental?.terms_accepted_at ?? viewing.rawProject?.terms_accepted_at}
+                lang={lang}
+              />
 
               {/* Assignment */}
               <div className="pt-3 border-t border-base">

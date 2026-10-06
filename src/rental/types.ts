@@ -37,6 +37,8 @@ export interface RentalRequestRow {
   notes: string | null;
   transport_by: ResponsibleParty | null;
   fuel_by: ResponsibleParty | null;
+  terms_accepted: boolean;
+  terms_accepted_at: string | null;
   status: RentalRequestStatus;
   internal_notes: string;
   assigned_to: string | null;
