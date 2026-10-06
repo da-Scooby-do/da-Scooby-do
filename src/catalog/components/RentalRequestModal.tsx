@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { X, Check, Send, FileText, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Check, Send, FileText, AlertCircle, Loader2, Truck, Fuel } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCatalog } from '../CatalogContext';
 import { getCategoryById, getBrandById, getModelById } from '../catalogApi';
 import { rentalPeriods } from '../types';
 import { useRental } from '@/rental/RentalContext';
-import type { RentalDuration } from '@/rental/types';
+import type { RentalDuration, ResponsibleParty } from '@/rental/types';
+import { responsiblePartyLabels } from '@/rental/types';
 
 export default function RentalRequestModal() {
   const { lang, dir } = useApp();
@@ -26,6 +27,8 @@ export default function RentalRequestModal() {
   const [projectCity, setProjectCity] = useState('');
   const [projectLocation, setProjectLocation] = useState('');
   const [notes, setNotes] = useState('');
+  const [transportBy, setTransportBy] = useState<ResponsibleParty | null>(null);
+  const [fuelBy, setFuelBy] = useState<ResponsibleParty | null>(null);
 
   if (!showRequestModal || !requestItem) return null;
 
@@ -54,11 +57,21 @@ export default function RentalRequestModal() {
     setProjectCity('');
     setProjectLocation('');
     setNotes('');
+    setTransportBy(null);
+    setFuelBy(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!model) return;
+    if (!transportBy || !fuelBy) {
+      setSubmitError(
+        ar
+          ? 'يرجى تحديد مسؤولية نقل المعدة والديزل.'
+          : 'Please choose who handles transport and diesel.'
+      );
+      return;
+    }
     setSubmitting(true);
     setSubmitError(null);
 
@@ -76,6 +89,8 @@ export default function RentalRequestModal() {
         project_city: projectCity || undefined,
         project_location: projectLocation || undefined,
         notes: notes || undefined,
+        transport_by: transportBy,
+        fuel_by: fuelBy,
       });
 
       if (result) {
@@ -218,6 +233,44 @@ export default function RentalRequestModal() {
                   ))}
                 </div>
               </div>
+
+              {/* Transport + diesel responsibility */}
+              {([
+                { key: 'transport', icon: Truck, labelAr: 'نقل المعدة (التوصيل والإرجاع)', labelEn: 'Equipment transport (delivery & return)', value: transportBy, set: setTransportBy },
+                { key: 'fuel', icon: Fuel, labelAr: 'الديزل (الوقود)', labelEn: 'Diesel (fuel)', value: fuelBy, set: setFuelBy },
+              ] as const).map((field) => (
+                <div key={field.key} role="radiogroup" aria-label={ar ? field.labelAr : field.labelEn}>
+                  <label className="flex items-center gap-2 text-sm font-semibold text-base-primary mb-2">
+                    <field.icon size={16} className="text-yellow-accent" />
+                    {ar ? field.labelAr : field.labelEn} <span className="text-yellow-accent">*</span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {(['sahab', 'customer'] as const).map((party) => {
+                      const active = field.value === party;
+                      return (
+                        <button
+                          key={party}
+                          type="button"
+                          role="radio"
+                          aria-checked={active}
+                          onClick={() => {
+                            field.set(party);
+                            setSubmitError(null);
+                          }}
+                          className={`px-3 py-3 rounded-lg border-2 text-sm font-bold transition-all flex items-center justify-center gap-2 ${
+                            active
+                              ? 'border-yellow-accent bg-yellow-accent/10 text-yellow-accent'
+                              : 'border-base text-base-muted hover:border-yellow-accent/50'
+                          }`}
+                        >
+                          {active && <Check size={15} />}
+                          {ar ? responsiblePartyLabels[party].ar : responsiblePartyLabels[party].en}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
 
               {/* Name + Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

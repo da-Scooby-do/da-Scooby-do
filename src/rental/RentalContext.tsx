@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { submitPublicRequest } from '@/lib/publicRequests';
-import type { RentalRequestRow, RentalRequestStatus, RentalDuration, RentalRequest, RentalRequestDraft } from './types';
+import type { RentalRequestRow, RentalRequestStatus, RentalDuration, RentalRequest, RentalRequestDraft, ResponsibleParty } from './types';
 import type { CompanyProfile } from '@/customer/types';
 import { generateRequestNumber } from './types';
 
@@ -19,6 +19,8 @@ interface SubmitRentalRequestData {
   project_city?: string;
   project_location?: string;
   notes?: string;
+  transport_by: ResponsibleParty;
+  fuel_by: ResponsibleParty;
 }
 
 interface RentalContextValue {
@@ -86,6 +88,8 @@ export function RentalProvider({ children }: { children: ReactNode }) {
       project_city: data.project_city || null,
       project_location: data.project_location || null,
       notes: data.notes || null,
+      transport_by: data.transport_by,
+      fuel_by: data.fuel_by,
       status: 'new' as RentalRequestStatus,
     };
 
