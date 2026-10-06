@@ -5,6 +5,8 @@ import { useCustomer } from '../CustomerContext';
 import { supabase } from '@/lib/supabase';
 import type { AuthView } from '../types';
 
+const GOOGLE_AUTH_ENABLED = import.meta.env.VITE_GOOGLE_AUTH === 'true';
+
 export default function AuthPages({ initialView = 'login' }: { initialView?: AuthView }) {
   const { lang, dir } = useApp();
   const { login, register } = useCustomer();
@@ -156,7 +158,9 @@ export default function AuthPages({ initialView = 'login' }: { initialView?: Aut
                 </button>
               </form>
 
-              {/* Google Sign-In */}
+              {/* Google Sign-In: hidden until the Google provider is enabled in Supabase
+                  (set VITE_GOOGLE_AUTH=true), otherwise the button leads to an error page. */}
+              {GOOGLE_AUTH_ENABLED && (
               <div className="relative mt-6 pt-6 border-t border-base">
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 bg-card text-xs text-base-muted">
                   {lang === 'ar' ? 'أو' : 'or'}
@@ -179,6 +183,7 @@ export default function AuthPages({ initialView = 'login' }: { initialView?: Aut
                   {lang === 'ar' ? 'المتابعة مع Google' : 'Continue with Google'}
                 </button>
               </div>
+              )}
 
               <div className="text-center mt-6">
                 <p className="text-sm text-base-muted">{lang === 'ar' ? 'ليس لديك حساب؟' : "Don't have an account?"}</p>

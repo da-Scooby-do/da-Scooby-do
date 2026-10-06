@@ -16,16 +16,19 @@ interface Route {
 
 function parseServicesHash(): Route {
   const hash = window.location.hash.replace(/^#\/?/, '');
-  const parts = hash.split('/').filter(Boolean);
+  // Split off "?service=..." first, otherwise "request?service=x" is read as an unknown category.
+  const [path, queryStr = ''] = hash.split('?');
+  const parts = path.split('/').filter(Boolean);
 
   if (parts[0] === 'services') {
     if (parts.length === 1) return { page: 'request' };
     if (parts[1] === 'request') {
-      const queryStr = hash.split('?')[1];
       const params = new URLSearchParams(queryStr);
       const service = params.get('service') || undefined;
       return { page: 'request', preselectedService: service };
     }
+    // Homepage "request a project" button
+    if (parts[1] === 'project-request') return { page: 'request' };
     if (parts[1] === 'project-execution') return { page: 'service-request', requestType: 'project_execution' };
     if (parts[1] === 'contracting-works') return { page: 'service-request', requestType: 'contracting' };
     if (parts[1] === 'engineering-services') return { page: 'service-request', requestType: 'engineering' };
