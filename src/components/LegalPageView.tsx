@@ -64,6 +64,15 @@ function linkify(text: string) {
 function labelled(line: string) {
   const m = line.match(/^([^:：]{1,30})[:：]\s*(.+)$/);
   if (!m) return linkify(line);
+  const waNumber = /واتساب|whatsapp/i.test(m[1]) && m[2].match(/^05\d{8}$/);
+  if (waNumber) {
+    return (
+      <>
+        <span className="text-base-primary font-semibold">{m[1]}:</span>{' '}
+        <a href={`https://wa.me/966${m[2].slice(1)}`} target="_blank" rel="noopener noreferrer" dir="ltr" className="text-yellow-accent hover:underline">{m[2]}</a>
+      </>
+    );
+  }
   return (
     <>
       <span className="text-base-primary font-semibold">{m[1]}:</span> {linkify(m[2])}
