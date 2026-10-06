@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { submitPublicRequest } from '@/lib/publicRequests';
 import type { ProjectRequestRow, ProjectRequestDBStatus, ProjectRequest, ProjectRequestDraft, ProjectRequestStatus } from './types';
 import { generateProjectRequestNumber } from './types';
 
@@ -71,9 +72,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const submitDBRequest = async (data: SubmitProjectRequestData): Promise<ProjectRequestRow | null> => {
-    const { data: inserted, error: insertError } = await supabase
-      .from('project_requests')
-      .insert({
+    const inserted = await submitPublicRequest('project_requests', {
         customer_name: data.customer_name,
         company_name: data.company_name || null,
         phone: data.phone,
@@ -87,12 +86,9 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         estimated_budget: data.estimated_budget || null,
         expected_start: data.expected_start || null,
         status: 'new',
-      })
-      .select()
-      .single();
-    if (insertError) throw insertError;
-    await dbReload();
-    return inserted as ProjectRequestRow;
+    });
+    dbReload().catch(() => {});
+    return inserted as unknown as ProjectRequestRow;
   };
 
   const updateDBStatus = async (id: string, status: ProjectRequestDBStatus) => {
