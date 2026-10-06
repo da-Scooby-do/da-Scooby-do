@@ -59,7 +59,7 @@ export default function CategorySelectionPage() {
             >
               {/* Image */}
               <div className="relative aspect-[4/3] overflow-hidden bg-black">
-                <img
+                <SafeImage
                   src={cat.image}
                   alt={lang === 'ar' ? cat.nameAr : cat.nameEn}
                   loading="lazy"
@@ -114,3 +114,4 @@ export default function CategorySelectionPage() {
 }
 
 import Breadcrumbs from './Breadcrumbs';
+import SafeImage from '@/components/SafeImage';

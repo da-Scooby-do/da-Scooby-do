@@ -39,11 +39,13 @@ export default function ImageUploader({
 
   const isRtl = lang === 'ar';
   const allImages = mainImage ? [mainImage, ...images] : images;
-  const canAddMore = allImages.length < maxImages + (mainImage ? 1 : 0);
+  // maxImages={0} with onMainImageChange = a single-image field (category image, brand logo, site logo).
+  const singleImage = maxImages === 0 && !!onMainImageChange;
+  const canAddMore = singleImage ? !mainImage : allImages.length < maxImages + (mainImage ? 1 : 0);
 
   const uploadFiles = useCallback(async (files: FileList | File[]) => {
     const fileArray = Array.from(files);
-    const valid = fileArray.filter((f) => ACCEPTED_TYPES.includes(f.type));
+    const valid = fileArray.filter((f) => ACCEPTED_TYPES.includes(f.type)).slice(0, singleImage ? 1 : undefined);
     if (valid.length === 0) {
       setError(isRtl ? 'صيغ مدعومة: JPG, PNG, WEBP' : 'Supported: JPG, PNG, WEBP');
       return;
@@ -79,7 +81,7 @@ export default function ImageUploader({
     } finally {
       setUploading(false);
     }
-  }, [bucket, folder, images, mainImage, onImagesChange, onMainImageChange, isRtl]);
+  }, [bucket, folder, images, mainImage, onImagesChange, onMainImageChange, isRtl, singleImage]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -185,7 +187,7 @@ export default function ImageUploader({
         </div>
       )}
 
-      {(allImages.length < (maxImages + (mainImage ? 1 : 0))) && (
+      {canAddMore && (
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -199,7 +201,7 @@ export default function ImageUploader({
             ref={inputRef}
             type="file"
             accept={accept}
-            multiple
+            multiple={!singleImage}
             className="hidden"
             onChange={(e) => { if (e.target.files?.length) uploadFiles(e.target.files); e.target.value = ''; }}
           />

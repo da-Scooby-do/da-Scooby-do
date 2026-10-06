@@ -22,6 +22,7 @@ interface BrandRow {
   name_en: string;
   display_order: number;
   hidden: boolean;
+  logo?: string;
 }
 
 interface EquipmentModelRow {
@@ -81,6 +82,7 @@ function mapBrand(row: BrandRow): Brand {
     id: row.id,
     nameAr: row.name_ar,
     nameEn: row.name_en,
+    logo: row.logo || '',
   };
 }
 
