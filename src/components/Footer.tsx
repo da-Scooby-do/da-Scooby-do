@@ -71,7 +71,7 @@ export default function Footer() {
     : (settings?.copyright_text_en || t.footer.copyright);
   const rightsText = t.footer.rights;
 
-  const contactCtaHref = '#/services/request';
+  const contactCtaHref = '#contact';
   const contactCtaLabel = isRtl ? 'تواصل مع فريق سحاب' : 'Contact SAHAB Team';
 
   return (
