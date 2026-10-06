@@ -1,6 +1,6 @@
 import { Building2, PencilRuler, ClipboardList, ArrowRight, ArrowLeft, Check } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
-import { getServiceCategoryById } from '../types';
+import { getServiceCategoryById, serviceCategories } from '../types';
 import type { ServiceCategoryId } from '../types';
 
 const iconMap: Record<string, typeof Building2> = {
@@ -38,13 +38,17 @@ export default function ServiceCategoryPage({ categoryId }: Props) {
           {lang === 'ar' ? 'الرئيسية' : 'Home'}
         </button>
         <span className="text-base-muted opacity-50">/</span>
-        <button
-          onClick={() => { window.location.hash = '#home'; }}
-          className="text-base-muted hover:text-yellow-accent transition-colors"
-        >
-          {lang === 'ar' ? 'الخدمات' : 'Services'}
-        </button>
-        <span className="text-base-muted opacity-50">/</span>
+        {category.id !== 'contracting' && (
+          <>
+            <button
+              onClick={() => { window.location.hash = '#/services/contracting'; }}
+              className="text-base-muted hover:text-yellow-accent transition-colors"
+            >
+              {lang === 'ar' ? 'المقاولات والإنشاءات' : 'Contracting & Construction'}
+            </button>
+            <span className="text-base-muted opacity-50">/</span>
+          </>
+        )}
         <span className="text-yellow-accent font-semibold">
           {lang === 'ar' ? category.nameAr : category.nameEn}
         </span>
@@ -103,6 +107,69 @@ export default function ServiceCategoryPage({ categoryId }: Props) {
           </div>
         ))}
       </div>
+
+      {/* Services (moved here from the removed "الخدمات" menu item) */}
+      {category.id === 'contracting' && (
+        <section id="services" className="mb-12">
+          <div className="text-center mb-8">
+            <span className="text-yellow-accent text-sm font-bold tracking-widest uppercase">
+              {lang === 'ar' ? 'خدماتنا' : 'Our Services'}
+            </span>
+            <h2 className="text-2xl lg:text-3xl font-black text-base-primary mt-2">
+              {lang === 'ar' ? 'الخدمات' : 'Services'}
+            </h2>
+            <p className="text-base-muted mt-2 max-w-2xl mx-auto">
+              {lang === 'ar'
+                ? 'خدمات هندسية وإدارة مشاريع تكمل أعمال المقاولات من التصميم حتى التسليم.'
+                : 'Engineering and project management services that complement our contracting work from design to handover.'}
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {serviceCategories.filter((c) => c.id !== category.id).map((other, i) => {
+              const OtherIcon = iconMap[other.icon] || Building2;
+              return (
+                <button
+                  key={other.id}
+                  onClick={() => { window.location.hash = `#/services/${other.id}`; }}
+                  data-tilt
+                  className="card-industrial hover-lift group p-6 text-start animate-fade-in-up"
+                  style={{ animationDelay: `${i * 0.1}s` }}
+                >
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="w-12 h-12 rounded-xl bg-yellow-accent/10 border border-yellow-accent/20 flex items-center justify-center flex-shrink-0 group-hover:bg-yellow-accent transition-all">
+                      <OtherIcon size={22} className="text-yellow-accent group-hover:text-black transition-colors" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-base-primary group-hover:text-yellow-accent transition-colors">
+                        {lang === 'ar' ? other.nameAr : other.nameEn}
+                      </h3>
+                      <p className="text-sm text-base-muted mt-1">{lang === 'ar' ? other.shortDescriptionAr : other.shortDescriptionEn}</p>
+                    </div>
+                  </div>
+                  <ul className="space-y-1.5 mb-4">
+                    {other.services.map((svc) => (
+                      <li key={svc.id} className="flex items-center gap-2 text-sm text-base-muted">
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-accent/60 flex-shrink-0" />
+                        {lang === 'ar' ? svc.nameAr : svc.nameEn}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="inline-flex items-center gap-2 text-sm font-bold text-yellow-accent">
+                    {lang === 'ar' ? 'عرض التفاصيل' : 'View Details'}
+                    <ArrowRight size={16} className={dir === 'rtl' ? 'rotate-180' : ''} />
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="text-center mt-6">
+            <a href="#/services/request" className="btn-secondary inline-flex">
+              {lang === 'ar' ? 'اطلب خدمة' : 'Request a Service'}
+              <ArrowRight size={16} className={dir === 'rtl' ? 'rotate-180' : ''} />
+            </a>
+          </div>
+        </section>
+      )}
 
       {/* CTA */}
       <div className="card-industrial p-8 lg:p-10 text-center">

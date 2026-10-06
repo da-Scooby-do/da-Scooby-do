@@ -47,14 +47,14 @@ export default function Header() {
     const updateFromHash = () => {
       const hash = window.location.hash;
       if (hash.startsWith('#/catalog')) setActiveHref('#/catalog');
-      else if (hash.startsWith('#/services/contracting')) setActiveHref('#/services/contracting');
-      else if (hash.startsWith('#/services')) setActiveHref('#/services/request');
+      // Services now live under "Contracting & Construction"
+      else if (hash.startsWith('#/services')) setActiveHref('#/services/contracting');
       else if (hash.startsWith('#/')) setActiveHref('');
     };
     updateFromHash();
     window.addEventListener('hashchange', updateFromHash);
 
-    const ids = ['home', 'about', 'contact'];
+    const ids = ['home'];
     const io = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
@@ -90,9 +90,6 @@ export default function Header() {
     { label: t.nav.home, href: '#home' },
     { label: t.nav.equipment, href: '#/catalog' },
     { label: lang === 'ar' ? 'المقاولات والإنشاءات' : 'Contracting & Construction', href: '#/services/contracting' },
-    { label: lang === 'ar' ? 'الخدمات' : 'Services', href: '#/services/request' },
-    { label: t.nav.about, href: '#about' },
-    { label: t.nav.contact, href: '#contact' },
   ];
 
   return (
