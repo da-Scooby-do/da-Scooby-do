@@ -185,6 +185,8 @@ export interface ProjectRequestRow {
   status: ProjectRequestDBStatus;
   internal_notes: string;
   assigned_to: string | null;
+  terms_accepted?: boolean;
+  terms_accepted_at?: string | null;
   created_at: string;
   updated_at: string;
 }

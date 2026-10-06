@@ -87,6 +87,8 @@ export interface ProjectRequestRecord {
   estimated_budget: string | null;
   expected_start: string | null;
   status: string;
+  terms_accepted?: boolean;
+  terms_accepted_at?: string | null;
   created_at: string;
   updated_at: string;
   request_type: string;

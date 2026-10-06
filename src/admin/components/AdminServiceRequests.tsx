@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, Eye, X, HardHat, Building2, MapPin, Calendar, Paperclip, FileText } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useServices } from '@/services/ServicesContext';
+import TermsAcceptanceBadge from './TermsAcceptanceBadge';
 import {
   statusLabels, statusColors, serviceCategoryLabels, projectTypeLabels, expectedStartLabels,
   allProjectStatuses, allProjectTypes, allExpectedStartOptions,
@@ -214,6 +215,9 @@ export default function AdminServiceRequests() {
                   <div><span className="text-base-muted">{ar ? 'الحالة' : 'Status'}: </span><span className={`px-2 py-0.5 rounded-md text-xs font-semibold ${statusColors[viewing.status as ProjectRequestStatus] || 'bg-base text-base-muted'}`}>{ar ? statusLabels[viewing.status as ProjectRequestStatus]?.ar || viewing.status : statusLabels[viewing.status as ProjectRequestStatus]?.en || viewing.status}</span></div>
                   <div><span className="text-base-muted">{ar ? 'تاريخ الإنشاء' : 'Created'}: </span><span className="font-semibold text-base-primary">{formatDate(viewing.created_at)}</span></div>
                   <div><span className="text-base-muted">{ar ? 'آخر تحديث' : 'Updated'}: </span><span className="font-semibold text-base-primary">{formatDate(viewing.updated_at)}</span></div>
+                </div>
+                <div className="mt-3">
+                  <TermsAcceptanceBadge accepted={viewing.terms_accepted} acceptedAt={viewing.terms_accepted_at} lang={lang} />
                 </div>
               </div>
             </div>

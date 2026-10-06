@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, Filter, Eye, X, StickyNote, Package, AlertCircle, Loader2 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useRental } from '@/rental/RentalContext';
+import TermsAcceptanceBadge from '@/admin/components/TermsAcceptanceBadge';
 import { useCatalogData } from '@/catalog/useCatalogData';
 import { statusLabels, statusColors, durationLabels, allStatuses, responsiblePartyLabels } from '@/rental/types';
 import type { RentalRequestRow, RentalRequestStatus } from '@/rental/types';
@@ -205,6 +206,9 @@ export default function AdminRentalRequests() {
                   <div className="text-sm text-base-primary p-3 rounded-lg bg-base border border-base">{viewing.notes}</div>
                 </div>
               )}
+
+              {/* Terms agreement */}
+              <TermsAcceptanceBadge accepted={viewing.terms_accepted} acceptedAt={viewing.terms_accepted_at} lang={lang} />
 
               {/* Dates */}
               <div className="text-xs text-base-muted flex justify-between">
