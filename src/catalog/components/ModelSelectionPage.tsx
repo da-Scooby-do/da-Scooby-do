@@ -3,6 +3,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useCatalog } from '../CatalogContext';
 import { getCategoryById, getBrandById, getModelsByCategoryAndBrand } from '../catalogApi';
 import Breadcrumbs from './Breadcrumbs';
+import SafeImage from '@/components/SafeImage';
 
 const availabilityLabels: Record<string, { ar: string; en: string }> = {
   available: { ar: 'متوفرة', en: 'Available' },
@@ -75,7 +76,7 @@ export default function ModelSelectionPage() {
             >
               {/* Image */}
               <div className="relative aspect-[4/3] overflow-hidden bg-black">
-                <img
+                <SafeImage
                   src={model.image}
                   alt={lang === 'ar' ? model.nameAr : model.nameEn}
                   loading="lazy"

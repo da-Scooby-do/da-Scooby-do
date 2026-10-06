@@ -1,8 +1,16 @@
+import { useState } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCatalog } from '../CatalogContext';
 import { getCategoryById, getBrandsByCategory, getModelCountByBrand } from '../catalogApi';
 import Breadcrumbs from './Breadcrumbs';
+
+/** Brand logo that falls back to the brand's first letter if the image fails. */
+function BrandLogo({ src, letter, alt }: { src: string; letter: string; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) return <span className="text-2xl lg:text-3xl font-black text-black">{letter}</span>;
+  return <img src={src} alt={alt} loading="lazy" className="max-w-full max-h-full object-contain" onError={() => setFailed(true)} />;
+}
 
 export default function BrandSelectionPage() {
   const { lang, dir } = useApp();
@@ -56,12 +64,18 @@ export default function BrandSelectionPage() {
               data-tilt className="card-industrial hover-lift group p-6 lg:p-8 text-center animate-scale-in"
               style={{ animationDelay: `${(i % 4) * 0.08}s` }}
             >
-              {/* Brand logo placeholder */}
-              <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4 rounded-2xl bg-yellow-accent/10 border border-yellow-accent/20 flex items-center justify-center group-hover:bg-yellow-accent transition-all duration-300">
-                <span className="text-2xl lg:text-3xl font-black text-yellow-accent group-hover:text-black transition-colors">
-                  {brand.nameEn.charAt(0)}
-                </span>
-              </div>
+              {/* Brand logo (uploaded) or first-letter placeholder */}
+              {brand.logo ? (
+                <div className="w-24 h-16 lg:w-32 lg:h-20 mx-auto mb-4 rounded-2xl bg-white p-2.5 flex items-center justify-center overflow-hidden">
+                  <BrandLogo src={brand.logo} letter={brand.nameEn.charAt(0)} alt={lang === 'ar' ? brand.nameAr : brand.nameEn} />
+                </div>
+              ) : (
+                <div className="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-4 rounded-2xl bg-yellow-accent/10 border border-yellow-accent/20 flex items-center justify-center group-hover:bg-yellow-accent transition-all duration-300">
+                  <span className="text-2xl lg:text-3xl font-black text-yellow-accent group-hover:text-black transition-colors">
+                    {brand.nameEn.charAt(0)}
+                  </span>
+                </div>
+              )}
 
               <h3 className="text-base lg:text-lg font-bold text-base-primary group-hover:text-yellow-accent transition-colors mb-1">
                 {lang === 'ar' ? brand.nameAr : brand.nameEn}

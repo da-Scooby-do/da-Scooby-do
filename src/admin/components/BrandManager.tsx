@@ -3,6 +3,8 @@ import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, X } from 'lucide
 import { useApp } from '@/contexts/AppContext';
 import { useAdmin } from '../AdminContext';
 import type { AdminBrandRow } from '@/catalog/catalogApi';
+import ImageUploader from '@/components/ImageUploader';
+import SafeImage from '@/components/SafeImage';
 
 function createEmptyBrand(): AdminBrandRow {
   return {
@@ -11,6 +13,7 @@ function createEmptyBrand(): AdminBrandRow {
     name_en: '',
     display_order: 0,
     hidden: false,
+    logo: '',
   };
 }
 
@@ -27,8 +30,8 @@ export default function BrandManager() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const openAdd = () => { setEditingBrand(null); setForm(createEmptyBrand()); setShowForm(true); };
-  const openEdit = (brand: AdminBrandRow) => { setEditingBrand(brand); setForm({ ...brand }); setShowForm(true); };
+  const openAdd = () => { setEditingBrand(null); setForm(createEmptyBrand()); setError(''); setShowForm(true); };
+  const openEdit = (brand: AdminBrandRow) => { setEditingBrand(brand); setForm({ ...brand, logo: brand.logo || '' }); setError(''); setShowForm(true); };
 
   const save = async () => {
     setSaving(true);
@@ -49,6 +52,15 @@ export default function BrandManager() {
   };
 
   const handleDelete = async (id: string) => {
+    const count = models.filter((m) => m.brand_id === id).length;
+    if (count > 0) {
+      setError(lang === 'ar'
+        ? `لا يمكن حذف هذه الماركة لأنها مرتبطة بـ ${count} موديل. احذف الموديلات أو انقلها لماركة أخرى أولاً، أو استخدم زر الإخفاء.`
+        : `This brand has ${count} models, so it can't be deleted. Delete or move its models first, or hide the brand instead.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!confirm(lang === 'ar' ? 'حذف هذه الماركة نهائياً؟' : 'Delete this brand permanently?')) return;
     try {
       setError('');
       await deleteBrand(id);
@@ -102,9 +114,15 @@ export default function BrandManager() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {sorted.map((brand) => (
           <div key={brand.id} className="card-industrial p-4 text-center">
-            <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-yellow-accent/10 border border-yellow-accent/20 flex items-center justify-center">
-              <span className="text-xl font-black text-yellow-accent">{brand.name_en.charAt(0)}</span>
-            </div>
+            {brand.logo ? (
+              <div className="w-20 h-12 mx-auto mb-3 rounded-xl bg-white p-1.5 flex items-center justify-center overflow-hidden">
+                <SafeImage src={brand.logo} alt={brand.name_en} className="max-w-full max-h-full object-contain" />
+              </div>
+            ) : (
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-yellow-accent/10 border border-yellow-accent/20 flex items-center justify-center">
+                <span className="text-xl font-black text-yellow-accent">{brand.name_en.charAt(0)}</span>
+              </div>
+            )}
             <div className="font-semibold text-base-primary text-sm mb-1">{lang === 'ar' ? brand.name_ar : brand.name_en}</div>
             <div className="text-xs text-base-muted mb-2">{getModelCount(brand.id)} {lang === 'ar' ? 'موديل' : 'models'}</div>
             <div className={`inline-block px-2 py-0.5 rounded-md text-xs font-semibold mb-3 ${brand.hidden ? 'bg-orange-500/10 text-orange-500' : 'bg-green-500/10 text-green-500'}`}>
@@ -115,7 +133,7 @@ export default function BrandManager() {
               <button onClick={() => handleToggleHidden(brand)} className="p-1.5 rounded-md hover:bg-yellow-accent/10 text-base-muted hover:text-yellow-accent">{brand.hidden ? <Eye size={14} /> : <EyeOff size={14} />}</button>
               <button onClick={() => handleReorder(brand.id, dir === 'rtl' ? 'down' : 'up')} className="p-1.5 rounded-md hover:bg-yellow-accent/10 text-base-muted hover:text-yellow-accent"><ArrowUp size={14} /></button>
               <button onClick={() => handleReorder(brand.id, dir === 'rtl' ? 'up' : 'down')} className="p-1.5 rounded-md hover:bg-yellow-accent/10 text-base-muted hover:text-yellow-accent"><ArrowDown size={14} /></button>
-              <button onClick={() => { if (confirm(lang === 'ar' ? 'حذف هذه الماركة؟' : 'Delete this brand?')) handleDelete(brand.id); }} className="p-1.5 rounded-md hover:bg-red-500/10 text-base-muted hover:text-red-500"><Trash2 size={14} /></button>
+              <button onClick={() => handleDelete(brand.id)} className="p-1.5 rounded-md hover:bg-red-500/10 text-base-muted hover:text-red-500"><Trash2 size={14} /></button>
             </div>
           </div>
         ))}
@@ -136,6 +154,17 @@ export default function BrandManager() {
               )}
               <div><label className={labelClass}>{lang === 'ar' ? 'الاسم (عربي)' : 'Name (Arabic)'}</label><input className={inputClass} value={form.name_ar} onChange={(e) => update('name_ar', e.target.value)} /></div>
               <div><label className={labelClass}>{lang === 'ar' ? 'الاسم (إنجليزي)' : 'Name (English)'}</label><input className={inputClass} value={form.name_en} onChange={(e) => update('name_en', e.target.value)} /></div>
+              <ImageUploader
+                bucket="equipment-images"
+                images={[]}
+                mainImage={form.logo || ''}
+                onMainImageChange={(url) => update('logo', url)}
+                onImagesChange={() => {}}
+                maxImages={0}
+                lang={lang}
+                folder="brands"
+                label={lang === 'ar' ? 'شعار الماركة (اختياري)' : 'Brand logo (optional)'}
+              />
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked={form.hidden} onChange={(e) => update('hidden', e.target.checked)} className="w-4 h-4 accent-yellow-accent" />
                 <span className="text-sm font-semibold text-base-primary">{lang === 'ar' ? 'مخفي' : 'Hidden'}</span>

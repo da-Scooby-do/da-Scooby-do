@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCatalog } from '@/catalog/CatalogContext';
+import SafeImage from '@/components/SafeImage';
 
 interface CategoryCardProps {
   name: string;
@@ -21,7 +22,7 @@ export default function CategoryCard({ name, image, index }: CategoryCardProps) 
     >
       {/* Image */}
       <div className="relative aspect-[4/3] overflow-hidden bg-black">
-        <img
+        <SafeImage
           src={image}
           alt={name}
           loading="lazy"

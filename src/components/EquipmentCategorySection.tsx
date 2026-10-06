@@ -2,6 +2,7 @@ import { ArrowRight, ArrowLeft, Grid3x3 } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCatalog } from '@/catalog/CatalogContext';
 import { getModelCountByCategory } from '@/catalog/catalogApi';
+import SafeImage from '@/components/SafeImage';
 
 export default function EquipmentCategorySection() {
   const { t, lang, dir } = useApp();
@@ -33,7 +34,7 @@ export default function EquipmentCategorySection() {
                 style={{ animationDelay: `${(i % 4) * 0.08}s` }}
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-black">
-                  <img src={cat.image} alt={lang === 'ar' ? cat.nameAr : cat.nameEn} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                  <SafeImage src={cat.image} alt={lang === 'ar' ? cat.nameAr : cat.nameEn} loading="lazy" className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                   <div className="absolute top-3 ltr:right-3 rtl:left-3 w-8 h-8 rounded-lg bg-yellow-accent/90 backdrop-blur-sm flex items-center justify-center text-black font-black text-sm">
                     {String(i + 1).padStart(2, '0')}

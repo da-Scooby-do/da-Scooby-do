@@ -30,6 +30,8 @@ export interface Brand {
   id: string;
   nameAr: string;
   nameEn: string;
+  /** Uploaded logo URL; empty shows the first letter. */
+  logo?: string;
 }
 
 export interface EquipmentVariant {

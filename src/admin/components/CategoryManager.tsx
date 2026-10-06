@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Eye, EyeOff, ArrowUp, ArrowDown, X } from 'lucide
 import { useApp } from '@/contexts/AppContext';
 import { useAdmin } from '../AdminContext';
 import ImageUploader from '@/components/ImageUploader';
+import SafeImage from '@/components/SafeImage';
 import type { AdminCategoryRow } from '@/catalog/catalogApi';
 import type { SpecField } from '@/catalog/types';
 
@@ -39,8 +40,8 @@ export default function CategoryManager() {
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const openAdd = () => { setEditingCategory(null); setForm(createEmptyCategory()); setShowForm(true); };
-  const openEdit = (cat: AdminCategoryRow) => { setEditingCategory(cat); setForm({ ...cat, spec_fields: [...(cat.spec_fields || [])] }); setShowForm(true); };
+  const openAdd = () => { setEditingCategory(null); setForm(createEmptyCategory()); setError(''); setShowForm(true); };
+  const openEdit = (cat: AdminCategoryRow) => { setEditingCategory(cat); setForm({ ...cat, spec_fields: [...(cat.spec_fields || [])] }); setError(''); setShowForm(true); };
 
   const save = async () => {
     setSaving(true);
@@ -61,6 +62,15 @@ export default function CategoryManager() {
   };
 
   const handleDelete = async (id: string) => {
+    const count = models.filter((m) => m.category_id === id).length;
+    if (count > 0) {
+      setError(lang === 'ar'
+        ? `لا يمكن حذف هذه الفئة لأنها تحتوي على ${count} موديل. احذف الموديلات أو انقلها لفئة أخرى أولاً، أو استخدم زر الإخفاء لإخفائها من الموقع.`
+        : `This category has ${count} models, so it can't be deleted. Delete or move its models first, or hide the category instead.`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    if (!confirm(lang === 'ar' ? 'حذف هذه الفئة نهائياً؟' : 'Delete this category permanently?')) return;
     try {
       setError('');
       await deleteCategory(id);
@@ -126,7 +136,7 @@ export default function CategoryManager() {
         {sorted.map((cat) => (
           <div key={cat.id} className="card-industrial p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0">
-              {cat.image && <img src={cat.image} alt="" className="w-full h-full object-cover" />}
+              <SafeImage src={cat.image} alt="" className="w-full h-full object-cover" />
             </div>
             <div className="flex-1 min-w-0">
               <div className="font-semibold text-base-primary text-sm">{lang === 'ar' ? cat.name_ar : cat.name_en}</div>
@@ -140,7 +150,7 @@ export default function CategoryManager() {
               <button onClick={() => handleToggleHidden(cat)} className="p-1.5 rounded-md hover:bg-yellow-accent/10 text-base-muted hover:text-yellow-accent">{cat.hidden ? <Eye size={14} /> : <EyeOff size={14} />}</button>
               <button onClick={() => handleReorder(cat.id, dir === 'rtl' ? 'down' : 'up')} className="p-1.5 rounded-md hover:bg-yellow-accent/10 text-base-muted hover:text-yellow-accent"><ArrowUp size={14} /></button>
               <button onClick={() => handleReorder(cat.id, dir === 'rtl' ? 'up' : 'down')} className="p-1.5 rounded-md hover:bg-yellow-accent/10 text-base-muted hover:text-yellow-accent"><ArrowDown size={14} /></button>
-              <button onClick={() => { if (confirm(lang === 'ar' ? 'حذف هذه الفئة؟' : 'Delete this category?')) handleDelete(cat.id); }} className="p-1.5 rounded-md hover:bg-red-500/10 text-base-muted hover:text-red-500"><Trash2 size={14} /></button>
+              <button onClick={() => handleDelete(cat.id)} className="p-1.5 rounded-md hover:bg-red-500/10 text-base-muted hover:text-red-500"><Trash2 size={14} /></button>
             </div>
           </div>
         ))}

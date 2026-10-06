@@ -54,7 +54,7 @@ export default function DetailsPage() {
         <div className="animate-fade-in">
           {/* Main image */}
           <div className="relative aspect-[4/3] rounded-2xl overflow-hidden bg-black mb-4">
-            <img
+            <SafeImage
               src={model.image}
               alt={lang === 'ar' ? model.nameAr : model.nameEn}
               className="w-full h-full object-cover"
@@ -72,7 +72,7 @@ export default function DetailsPage() {
                   key={i}
                   className="relative aspect-square rounded-lg overflow-hidden bg-black border border-base hover:border-yellow-accent cursor-pointer transition-all"
                 >
-                  <img src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
+                  <SafeImage src={img} alt="" loading="lazy" className="w-full h-full object-cover" />
                 </div>
               ))}
             </div>
@@ -216,3 +216,4 @@ export default function DetailsPage() {
 }
 
 import Breadcrumbs from './Breadcrumbs';
+import SafeImage from '@/components/SafeImage';
