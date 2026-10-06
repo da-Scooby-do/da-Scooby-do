@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Menu, X, Sun, Moon, Globe, ArrowRight, UserCircle } from 'lucide-react';
+import { Menu, X, Sun, Moon, Globe, ArrowRight, UserCircle, LayoutDashboard } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useSiteContent } from '@/contexts/SiteContentContext';
 import { supabase } from '@/lib/supabase';
@@ -10,12 +10,23 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authed, setAuthed] = useState(false);
+  const [isStaff, setIsStaff] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeHref, setActiveHref] = useState(() => (window.location.hash.startsWith('#/') ? '' : '#home'));
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => setAuthed(!!session));
+    // The dashboard button is only shown to signed-in, active staff (the dashboard itself
+    // is protected separately by the admin login and database permissions).
+    const applySession = (hasSession: boolean) => {
+      setAuthed(hasSession);
+      if (!hasSession) {
+        setIsStaff(false);
+        return;
+      }
+      supabase.rpc('is_staff').then(({ data, error }) => setIsStaff(!error && data === true));
+    };
+    supabase.auth.getSession().then(({ data: { session } }) => applySession(!!session));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => applySession(!!session));
     return () => subscription.unsubscribe();
   }, []);
 
@@ -166,6 +177,19 @@ export default function Header() {
               {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
+            {/* Dashboard link: staff only */}
+            {isStaff && (
+              <a
+                href="#/admin"
+                title={lang === 'ar' ? 'لوحة التحكم' : 'Dashboard'}
+                aria-label={lang === 'ar' ? 'لوحة التحكم' : 'Dashboard'}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg border border-yellow-accent/60 bg-yellow-accent/10 text-yellow-accent hover:bg-yellow-accent hover:text-black transition-all text-sm font-bold"
+              >
+                <LayoutDashboard size={18} />
+                <span className="hidden md:inline lg:hidden 2xl:inline">{lang === 'ar' ? 'لوحة التحكم' : 'Dashboard'}</span>
+              </a>
+            )}
+
             {/* Account link */}
             <a
               href="#/account"
@@ -211,6 +235,16 @@ export default function Header() {
       {mobileOpen && (
         <div className="lg:hidden fixed inset-x-0 top-16 bottom-0 z-40 bg-elevated animate-fade-in overflow-y-auto">
           <nav className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-1">
+            {isStaff && (
+              <a
+                href="#/admin"
+                onClick={() => setMobileOpen(false)}
+                className="menu-item-in flex items-center gap-2 px-4 py-4 mb-2 text-lg font-bold rounded-xl border-2 border-yellow-accent/60 bg-yellow-accent/10 text-yellow-accent"
+              >
+                <LayoutDashboard size={20} />
+                {lang === 'ar' ? 'لوحة التحكم' : 'Dashboard'}
+              </a>
+            )}
             {navItems.map((item, i) => {
               const active = activeHref === item.href;
               return (
