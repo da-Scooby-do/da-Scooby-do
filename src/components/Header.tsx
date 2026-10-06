@@ -11,7 +11,7 @@ export default function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [activeHref, setActiveHref] = useState('#home');
+  const [activeHref, setActiveHref] = useState(() => (window.location.hash.startsWith('#/') ? '' : '#home'));
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));
@@ -38,6 +38,7 @@ export default function Header() {
       if (hash.startsWith('#/catalog')) setActiveHref('#/catalog');
       else if (hash.startsWith('#/services/contracting')) setActiveHref('#/services/contracting');
       else if (hash.startsWith('#/services')) setActiveHref('#/services/request');
+      else if (hash.startsWith('#/')) setActiveHref('');
     };
     updateFromHash();
     window.addEventListener('hashchange', updateFromHash);

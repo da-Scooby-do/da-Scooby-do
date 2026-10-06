@@ -117,7 +117,7 @@ export default function LegalPageView({ pageId }: { pageId: string }) {
   return (
     <div className="min-h-screen bg-base">
       <Header />
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-20">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 pb-12 lg:pt-32 lg:pb-20">
         <h1 className="text-3xl lg:text-5xl font-black text-base-primary mb-3 animate-fade-in-up">
           {lang === 'ar' ? page.title_ar : page.title_en}
         </h1>
