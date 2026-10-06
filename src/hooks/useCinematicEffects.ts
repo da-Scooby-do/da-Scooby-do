@@ -92,6 +92,38 @@ export function useCinematicEffects() {
 /** Scroll to in-page anchors like `#about` after a route switch re-renders the page. */
 export function useAnchorScroll() {
   useEffect(() => {
+    // Content above the target (e.g. equipment cards from the database) can finish loading
+    // after we scrolled and push the target down. Re-align for a few seconds unless the
+    // visitor starts scrolling themselves.
+    let stopKeeping: (() => void) | null = null;
+    const keepInView = (el: HTMLElement) => {
+      stopKeeping?.();
+      let lastTop = el.getBoundingClientRect().top + window.scrollY;
+      const realign = () => {
+        const top = el.getBoundingClientRect().top + window.scrollY;
+        if (Math.abs(top - lastTop) > 4) {
+          lastTop = top;
+          el.scrollIntoView({ behavior: 'auto', block: 'start' });
+        }
+      };
+      const ro = new ResizeObserver(realign);
+      ro.observe(document.body);
+      const userScroll = () => stop();
+      const timer = window.setTimeout(() => stop(), 4000);
+      const stop = () => {
+        ro.disconnect();
+        window.clearTimeout(timer);
+        window.removeEventListener('wheel', userScroll);
+        window.removeEventListener('touchstart', userScroll);
+        window.removeEventListener('keydown', userScroll);
+        stopKeeping = null;
+      };
+      window.addEventListener('wheel', userScroll, { passive: true });
+      window.addEventListener('touchstart', userScroll, { passive: true });
+      window.addEventListener('keydown', userScroll);
+      stopKeeping = stop;
+    };
+
     const scrollToAnchor = () => {
       const hash = window.location.hash;
       if (!hash || hash.startsWith('#/') || hash === '#') return;
@@ -100,6 +132,7 @@ export function useAnchorScroll() {
         const el = document.getElementById(decodeURIComponent(hash.slice(1)));
         if (el) {
           el.scrollIntoView({ behavior: prefersReducedMotion() ? 'auto' : 'smooth', block: 'start' });
+          keepInView(el);
         } else if (tries++ < 20) {
           setTimeout(attempt, 50);
         }
@@ -108,6 +141,9 @@ export function useAnchorScroll() {
     };
     scrollToAnchor();
     window.addEventListener('hashchange', scrollToAnchor);
-    return () => window.removeEventListener('hashchange', scrollToAnchor);
+    return () => {
+      window.removeEventListener('hashchange', scrollToAnchor);
+      stopKeeping?.();
+    };
   }, []);
 }
