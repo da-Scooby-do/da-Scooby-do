@@ -26,6 +26,7 @@ import RentalProcess from '@/components/RentalProcess';
 import ServicesSection from '@/services/components/ServicesSection';
 import Company from '@/components/Company';
 import CTA from '@/components/CTA';
+import LegalSection from '@/components/LegalSection';
 import Footer from '@/components/Footer';
 import FloatingActions from '@/components/FloatingActions';
 import { useAnchorScroll, useCinematicEffects } from '@/hooks/useCinematicEffects';
@@ -192,6 +193,7 @@ function App() {
             <RentalProcess />
             <Company />
             <CTA />
+            <LegalSection />
           </main>
           <Footer />
           <FloatingActions />
