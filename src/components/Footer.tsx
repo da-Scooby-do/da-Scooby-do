@@ -49,7 +49,8 @@ export default function Footer() {
     { label: isRtl ? 'حسابي' : 'My Account', href: '#/account' },
   ];
 
-  const activeLegalPages = legalPages.filter((p) => p.is_active);
+  // Only link pages that actually have content, so visitors never land on an empty page.
+  const activeLegalPages = legalPages.filter((p) => p.is_active && (p.content_ar?.trim() || p.content_en?.trim()));
 
   const socials = [
     { icon: MessageCircle, url: whatsapp ? `https://wa.me/${whatsapp.replace(/[^0-9]/g, '')}` : '' },
