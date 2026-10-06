@@ -10,6 +10,8 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [authed, setAuthed] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [activeHref, setActiveHref] = useState('#home');
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setAuthed(!!session));
@@ -18,10 +20,59 @@ export default function Header() {
   }, []);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 20);
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(max > 0 ? Math.min(1, window.scrollY / max) : 0);
+    };
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  // Highlight the nav link of the section currently on screen (home page),
+  // or of the current route (catalog / services pages).
+  useEffect(() => {
+    const updateFromHash = () => {
+      const hash = window.location.hash;
+      if (hash.startsWith('#/catalog')) setActiveHref('#/catalog');
+      else if (hash.startsWith('#/services/contracting')) setActiveHref('#/services/contracting');
+      else if (hash.startsWith('#/services')) setActiveHref('#/services/request');
+    };
+    updateFromHash();
+    window.addEventListener('hashchange', updateFromHash);
+
+    const ids = ['home', 'about', 'contact'];
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActiveHref(`#${e.target.id}`);
+        }
+      },
+      { rootMargin: '-45% 0px -50% 0px' },
+    );
+    ids.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    });
+    return () => {
+      window.removeEventListener('hashchange', updateFromHash);
+      io.disconnect();
+    };
+  }, []);
+
+  // Lock page scroll and allow Escape to close while the mobile menu is open.
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMobileOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [mobileOpen]);
 
   const navItems = [
     { label: t.nav.home, href: '#home' },
@@ -33,34 +84,35 @@ export default function Header() {
   ];
 
   return (
+    <>
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? 'bg-elevated border-b border-base shadow-lg'
-          : 'bg-transparent'
+        scrolled || mobileOpen
+          ? 'bg-elevated/90 backdrop-blur-xl border-b border-base shadow-lg'
+          : 'bg-gradient-to-b from-black/60 to-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
+        <div className="flex items-center justify-between gap-3 lg:gap-6 h-16 lg:h-20">
           {/* Logo */}
-          <a href="#home" className="flex items-center gap-2 group">
+          <a href="#home" className="flex items-center gap-2 group min-w-0 shrink">
             <div className="relative">
               <div className="w-10 h-10 lg:w-12 lg:h-12 bg-yellow-accent rounded-lg flex items-center justify-center font-black text-black text-xl lg:text-2xl transition-transform group-hover:scale-105">
                 S
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-yellow-accent rounded-sm opacity-60" />
             </div>
-            <div className="flex flex-col leading-none">
+            <div className="flex flex-col leading-none min-w-0">
               {lang === 'ar' && settings?.logo_ar ? (
                 <img src={settings.logo_ar} alt="سحاب" className="h-7 lg:h-9 w-auto object-contain" />
               ) : lang === 'en' && settings?.logo_en ? (
                 <img src={settings.logo_en} alt="SAHAB" className="h-7 lg:h-9 w-auto object-contain" />
               ) : (
                 <>
-                  <span className="text-xl lg:text-2xl font-black text-base-primary tracking-tight">
+                  <span className="text-xl lg:text-2xl font-black text-base-primary tracking-tight truncate max-w-[9rem] sm:max-w-[14rem] lg:max-w-[12rem] xl:max-w-[16rem]">
                     {lang === 'ar' ? (settings?.company_name_ar || 'سحاب') : (settings?.company_name_en || 'SAHAB')}
                   </span>
-                  <span className="text-[0.6rem] lg:text-xs text-base-muted font-medium tracking-wider">
+                  <span className="hidden min-[380px]:block text-[0.6rem] lg:text-xs text-base-muted font-medium tracking-wider whitespace-nowrap">
                     {lang === 'ar' ? 'معدات ومقاولات' : 'EQUIPMENT & CONTRACTING'}
                   </span>
                 </>
@@ -68,8 +120,32 @@ export default function Header() {
             </div>
           </a>
 
+          {/* Desktop nav */}
+          <nav className="hidden lg:flex items-center gap-0.5 xl:gap-2" aria-label={lang === 'ar' ? 'القائمة الرئيسية' : 'Main navigation'}>
+            {navItems.map((item) => {
+              const active = activeHref === item.href;
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? 'page' : undefined}
+                  className={`relative px-2 xl:px-3 py-2 text-sm font-semibold whitespace-nowrap transition-colors group ${
+                    active ? 'text-yellow-accent' : scrolled ? 'text-base-muted hover:text-base-primary' : 'text-white/80 hover:text-white'
+                  }`}
+                >
+                  {item.label}
+                  <span
+                    className={`absolute bottom-0 inset-x-2 xl:inset-x-3 h-0.5 bg-yellow-accent origin-center transition-transform duration-300 ${
+                      active ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                    }`}
+                  />
+                </a>
+              );
+            })}
+          </nav>
+
           {/* Controls */}
-          <div className="flex items-center gap-2 lg:gap-3">
+          <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 shrink-0">
             {/* Language toggle */}
             <button
               onClick={toggleLang}
@@ -101,7 +177,7 @@ export default function Header() {
             {/* CTA */}
             <a
               href="#/catalog"
-              className="hidden sm:inline-flex btn-primary text-sm"
+              className="hidden sm:inline-flex lg:hidden xl:inline-flex btn-primary text-sm"
             >
               {t.cta.orderEquipment}
               <ArrowRight size={16} className={dir === 'rtl' ? 'rotate-180' : ''} />
@@ -112,6 +188,7 @@ export default function Header() {
               onClick={() => setMobileOpen(!mobileOpen)}
               className="lg:hidden p-2 rounded-lg border border-base text-base-primary"
               aria-label="Menu"
+              aria-expanded={mobileOpen}
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -119,38 +196,57 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile nav */}
+      {/* Scroll progress */}
+      <div className="absolute bottom-0 inset-x-0 h-0.5 pointer-events-none">
+        <div
+          className="h-full bg-yellow-accent origin-left rtl:origin-right transition-transform duration-150"
+          style={{ transform: `scaleX(${progress})` }}
+        />
+      </div>
+
+    </header>
+
+      {/* Mobile nav: full-height panel */}
       {mobileOpen && (
-        <div className="lg:hidden bg-elevated border-b border-base animate-fade-in">
-          <nav className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
-            {navItems.map((item) => (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                className="px-4 py-3 text-base font-medium text-base-muted hover:text-yellow-accent hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all"
-              >
-                {item.label}
-              </a>
-            ))}
+        <div className="lg:hidden fixed inset-x-0 top-16 bottom-0 z-40 bg-elevated animate-fade-in overflow-y-auto">
+          <nav className="max-w-7xl mx-auto px-4 py-6 flex flex-col gap-1">
+            {navItems.map((item, i) => {
+              const active = activeHref === item.href;
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className={`menu-item-in flex items-center justify-between px-4 py-4 text-lg font-bold rounded-xl transition-all border ${
+                    active ? 'text-yellow-accent border-yellow-accent/40 bg-yellow-accent/5' : 'text-base-primary border-transparent hover:border-base'
+                  }`}
+                  style={{ animationDelay: `${i * 0.05}s` }}
+                >
+                  {item.label}
+                  <ArrowRight size={18} className={`text-base-muted ${dir === 'rtl' ? 'rotate-180' : ''}`} />
+                </a>
+              );
+            })}
             <a
               href="#/account"
               onClick={() => setMobileOpen(false)}
-              className="px-4 py-3 text-base font-medium text-base-muted hover:text-yellow-accent hover:bg-black/5 dark:hover:bg-white/5 rounded-lg transition-all flex items-center gap-2"
+              className="menu-item-in px-4 py-4 text-lg font-bold text-base-primary rounded-xl border border-transparent hover:border-base transition-all flex items-center gap-2"
+              style={{ animationDelay: `${navItems.length * 0.05}s` }}
             >
-              <UserCircle size={18} />
+              <UserCircle size={20} />
               {authed ? (lang === 'ar' ? 'حسابي' : 'My Account') : (lang === 'ar' ? 'تسجيل الدخول' : 'Login')}
             </a>
             <a
               href="#/catalog"
               onClick={() => setMobileOpen(false)}
-              className="btn-primary mt-2 justify-center"
+              className="menu-item-in btn-primary mt-4 justify-center text-base"
+              style={{ animationDelay: `${(navItems.length + 1) * 0.05}s` }}
             >
               {t.cta.orderEquipment}
             </a>
           </nav>
         </div>
       )}
-    </header>
+    </>
   );
 }

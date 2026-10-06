@@ -54,7 +54,7 @@ export default function CategorySelectionPage() {
             <button
               key={cat.id}
               onClick={() => navigate({ level: 'brands', categoryId: cat.id })}
-              className="card-industrial hover-lift group text-start animate-scale-in"
+              data-tilt className="card-industrial hover-lift group text-start animate-scale-in"
               style={{ animationDelay: `${(i % 4) * 0.08}s` }}
             >
               {/* Image */}

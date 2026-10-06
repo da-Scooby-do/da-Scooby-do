@@ -42,7 +42,7 @@ export default function WhySahab() {
             return (
               <div
                 key={i}
-                className="card-industrial p-6 lg:p-8 hover-lift group animate-fade-in-up"
+                data-tilt className="card-industrial p-6 lg:p-8 hover-lift group animate-fade-in-up"
                 style={{ animationDelay: `${(i % 3) * 0.1}s` }}
               >
                 {/* Icon */}

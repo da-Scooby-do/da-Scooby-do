@@ -70,7 +70,7 @@ export default function ModelSelectionPage() {
           return (
             <div
               key={model.id}
-              className="card-industrial hover-lift group animate-fade-in-up"
+              data-tilt className="card-industrial hover-lift group animate-fade-in-up"
               style={{ animationDelay: `${(i % 3) * 0.1}s` }}
             >
               {/* Image */}

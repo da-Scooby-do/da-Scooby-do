@@ -3,6 +3,7 @@ import { useEmployee } from './EmployeeContext';
 import AdminLayout from './components/AdminLayout';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLogin from './components/AdminLogin';
+import AdminAccessDenied from './components/AdminAccessDenied';
 import EquipmentList from './components/EquipmentList';
 import CategoryManager from './components/CategoryManager';
 import BrandManager from './components/BrandManager';
@@ -29,9 +30,11 @@ import SiteContentManager from './components/SiteContentManager';
 
 export default function AdminRouter() {
   const { view, loading: adminLoading } = useAdmin();
-  const { session, authLoading, currentEmployee, can } = useEmployee();
+  const { session, authLoading, staffCheckedFor, currentEmployee, can } = useEmployee();
 
-  if (authLoading) {
+  const checkingStaff = !!session && staffCheckedFor !== session.user.id;
+
+  if (authLoading || checkingStaff) {
     return (
       <div className="min-h-screen bg-base flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-yellow-accent border-t-transparent rounded-full animate-spin" />
@@ -39,8 +42,13 @@ export default function AdminRouter() {
     );
   }
 
-  if (!session || !currentEmployee) {
+  if (!session) {
     return <AdminLogin />;
+  }
+
+  // Signed in, but not an active staff member: never show the dashboard.
+  if (!currentEmployee || currentEmployee.status !== 'active') {
+    return <AdminAccessDenied />;
   }
 
   if (adminLoading) {

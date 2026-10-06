@@ -74,7 +74,7 @@ export default function ContractingSection() {
               <a
                 key={section.id}
                 href={section.route}
-                className="card-industrial p-6 lg:p-8 hover-lift group animate-fade-in-up flex flex-col"
+                data-tilt className="card-industrial p-6 lg:p-8 hover-lift group animate-fade-in-up flex flex-col"
                 style={{ animationDelay: `${(i % 3) * 0.1}s` }}
               >
                 <div className="flex items-start gap-5 mb-4">
