@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Upload, X, ImageIcon, Loader2, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { compressImage } from '@/lib/compressImage';
 
 interface ImageUploaderProps {
   bucket: string;
@@ -18,6 +19,7 @@ interface ImageUploaderProps {
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB — matches equipment-images bucket limit
+const MAX_ORIGINAL_SIZE = 40 * 1024 * 1024; // originals are compressed before upload
 
 export default function ImageUploader({
   bucket,
@@ -50,22 +52,28 @@ export default function ImageUploader({
       setError(isRtl ? 'صيغ مدعومة: JPG, PNG, WEBP' : 'Supported: JPG, PNG, WEBP');
       return;
     }
-    const oversized = valid.filter((f) => f.size > MAX_FILE_SIZE);
+    // Photos are shrunk before upload, so allow large originals (e.g. phone camera shots).
+    const oversized = valid.filter((f) => f.size > MAX_ORIGINAL_SIZE);
     if (oversized.length > 0) {
-      setError(isRtl ? `حجم الملف يتجاوز 10 ميجابايت` : 'File size exceeds 10MB');
+      setError(isRtl ? `حجم الملف يتجاوز 40 ميجابايت` : 'File size exceeds 40MB');
       return;
     }
     setError('');
     setUploading(true);
     try {
       const uploaded: string[] = [];
-      for (const file of valid) {
+      for (const original of valid) {
+        // Logos/single images stay small; gallery photos keep more detail.
+        const file = await compressImage(original, singleImage ? 1200 : 1600);
+        if (file.size > MAX_FILE_SIZE) {
+          throw new Error(isRtl ? 'حجم الصورة كبير جداً حتى بعد الضغط (الحد 10 ميجابايت)' : 'Image is still larger than 10MB after compression');
+        }
         const ext = file.name.split('.').pop();
         const prefix = folder ? `${folder}/` : '';
         const fileName = `${prefix}${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
         const { error: uploadError } = await supabase.storage
           .from(bucket)
-          .upload(fileName, file, { cacheControl: '3600', upsert: false });
+          .upload(fileName, file, { cacheControl: '31536000', contentType: file.type, upsert: false });
         if (uploadError) throw uploadError;
         const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fileName);
         uploaded.push(urlData.publicUrl);

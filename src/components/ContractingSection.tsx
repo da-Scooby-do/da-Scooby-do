@@ -1,5 +1,6 @@
 import { ArrowRight, Building2, HardHat, PencilRuler, MapPin, ClipboardList } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
+import SafeImage from '@/components/SafeImage';
 
 const sections = [
   {
@@ -55,7 +56,7 @@ export default function ContractingSection() {
   return (
     <section id="contracting" className="py-20 lg:py-28 bg-elevated relative overflow-hidden">
       <div className="absolute inset-0 z-0 opacity-10">
-        <img src="https://images.pexels.com/photos/37687676/pexels-photo-37687676.jpeg?auto=compress&cs=tinysrgb&w=1920" alt="" className="w-full h-full object-cover" />
+        <SafeImage src="https://images.pexels.com/photos/37687676/pexels-photo-37687676.jpeg?auto=compress&cs=tinysrgb&w=1280" alt="" className="w-full h-full object-cover" />
       </div>
       <div className="absolute inset-0 z-0 bg-gradient-to-b from-elevated via-elevated/95 to-elevated" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">

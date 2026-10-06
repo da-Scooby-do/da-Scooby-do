@@ -1,5 +1,6 @@
 import { CheckCircle } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
+import SafeImage from '@/components/SafeImage';
 
 export default function Company() {
   const { t } = useApp();
@@ -11,7 +12,7 @@ export default function Company() {
           {/* Image side */}
           <div className="relative animate-fade-in">
             <div className="relative rounded-2xl overflow-hidden">
-              <img
+              <SafeImage
                 src="https://images.pexels.com/photos/8961260/pexels-photo-8961260.jpeg?auto=compress&cs=tinysrgb&w=1200"
                 alt="SAHAB team at construction site"
                 className="w-full h-[400px] lg:h-[500px] object-cover"

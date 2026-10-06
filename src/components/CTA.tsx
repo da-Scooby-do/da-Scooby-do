@@ -1,6 +1,7 @@
 import { ArrowRight, Phone, MessageCircle, Mail } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useSiteContent } from '@/contexts/SiteContentContext';
+import { responsiveSrcSet } from '@/components/SafeImage';
 
 export default function CTA() {
   const { t, dir, lang } = useApp();
@@ -13,7 +14,7 @@ export default function CTA() {
   return (
     <section id="contact" className="py-20 lg:py-28 bg-base relative overflow-hidden">
       <div className="absolute inset-0 z-0">
-        <img src="https://images.pexels.com/photos/30278762/pexels-photo-30278762.jpeg?auto=compress&cs=tinysrgb&w=1920" alt="" className="w-full h-full object-cover opacity-20" />
+        <img src="https://images.pexels.com/photos/30278762/pexels-photo-30278762.jpeg?auto=compress&cs=tinysrgb&w=1280" srcSet={responsiveSrcSet("https://images.pexels.com/photos/30278762/pexels-photo-30278762.jpeg?auto=compress&cs=tinysrgb&w=1280")} sizes="100vw" alt="" loading="lazy" decoding="async" className="w-full h-full object-cover opacity-20" />
         <div className="absolute inset-0 bg-gradient-to-b from-base via-base/90 to-base" />
       </div>
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
