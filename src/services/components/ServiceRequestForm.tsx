@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { ArrowRight, ArrowLeft, Send, CheckCircle, AlertCircle, Upload, X, FileText, Building2, MapPin, Calendar, HardHat, Paperclip } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useServices } from '../ServicesContext';
+import TermsConsent from '@/components/TermsConsent';
 import {
   serviceCategories, serviceCategoryLabels, allServiceTypesList,
   projectTypeLabels, expectedStartLabels,
@@ -56,6 +57,8 @@ export default function ServiceRequestForm({ preselectedService }: Props) {
     attachments: [] as ProjectRequestAttachment[],
   });
   const [errors, setErrors] = useState<string[]>([]);
+  const [agreed, setAgreed] = useState(false);
+  const [consentInvalid, setConsentInvalid] = useState(false);
   const [submittedRef, setSubmittedRef] = useState<string | null>(null);
 
   const inputClass = 'w-full px-3 py-2.5 rounded-lg bg-base border border-base text-sm text-base-primary focus:border-yellow-accent focus:outline-none transition-colors';
@@ -120,9 +123,13 @@ export default function ServiceRequestForm({ preselectedService }: Props) {
 
   const handleSubmit = async () => {
     const errs = validate();
+    if (!agreed) {
+      errs.push(ar ? 'يجب الموافقة على الشروط والأحكام وسياسة الخصوصية' : 'You must agree to the Terms & Conditions and Privacy Policy');
+      setConsentInvalid(true);
+    }
     if (errs.length > 0) { setErrors(errs); return; }
     setErrors([]);
-    const result = await submitRequest(form);
+    const result = await submitRequest(form, agreed);
     if (result.success && result.record) {
       setSubmittedRef(result.record.request_reference);
     } else {
@@ -384,6 +391,19 @@ export default function ServiceRequestForm({ preselectedService }: Props) {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Terms consent */}
+        <div className="mb-4">
+          <TermsConsent
+            checked={agreed}
+            onChange={(v) => {
+              setAgreed(v);
+              if (v) setConsentInvalid(false);
+            }}
+            lang={lang}
+            invalid={consentInvalid}
+          />
         </div>
 
         {/* Submit */}
