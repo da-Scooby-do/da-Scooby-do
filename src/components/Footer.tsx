@@ -45,9 +45,6 @@ export default function Footer() {
     { label: t.nav.home, href: '#home' },
     { label: t.nav.equipment, href: '#/catalog' },
     { label: isRtl ? 'المقاولات والإنشاءات' : 'Contracting & Construction', href: '#/services/contracting' },
-    { label: isRtl ? 'الخدمات' : 'Services', href: '#/services/request' },
-    { label: t.nav.about, href: '#about' },
-    { label: t.nav.contact, href: '#contact' },
     { label: isRtl ? 'حسابي' : 'My Account', href: '#/account' },
   ];
 
