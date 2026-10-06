@@ -5,6 +5,7 @@ import { useCatalog } from '../CatalogContext';
 import { getCategoryById, getBrandById, getModelById } from '../catalogApi';
 import { rentalPeriods } from '../types';
 import { useRental } from '@/rental/RentalContext';
+import TermsConsent from '@/components/TermsConsent';
 import type { RentalDuration, ResponsibleParty } from '@/rental/types';
 import { responsiblePartyLabels } from '@/rental/types';
 
@@ -29,6 +30,8 @@ export default function RentalRequestModal() {
   const [notes, setNotes] = useState('');
   const [transportBy, setTransportBy] = useState<ResponsibleParty | null>(null);
   const [fuelBy, setFuelBy] = useState<ResponsibleParty | null>(null);
+  const [agreed, setAgreed] = useState(false);
+  const [consentInvalid, setConsentInvalid] = useState(false);
 
   if (!showRequestModal || !requestItem) return null;
 
@@ -59,6 +62,8 @@ export default function RentalRequestModal() {
     setNotes('');
     setTransportBy(null);
     setFuelBy(null);
+    setAgreed(false);
+    setConsentInvalid(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -69,6 +74,15 @@ export default function RentalRequestModal() {
         ar
           ? 'يرجى تحديد مسؤولية نقل المعدة والديزل.'
           : 'Please choose who handles transport and diesel.'
+      );
+      return;
+    }
+    if (!agreed) {
+      setConsentInvalid(true);
+      setSubmitError(
+        ar
+          ? 'يجب الموافقة على الشروط والأحكام وسياسة الخصوصية لإرسال الطلب.'
+          : 'Please agree to the Terms & Conditions and Privacy Policy to submit.'
       );
       return;
     }
@@ -91,6 +105,7 @@ export default function RentalRequestModal() {
         notes: notes || undefined,
         transport_by: transportBy,
         fuel_by: fuelBy,
+        terms_accepted: agreed,
       });
 
       if (result) {
@@ -373,6 +388,20 @@ export default function RentalRequestModal() {
                   onChange={(e) => setNotes(e.target.value)}
                 />
               </div>
+
+              {/* Terms consent */}
+              <TermsConsent
+                checked={agreed}
+                onChange={(v) => {
+                  setAgreed(v);
+                  if (v) {
+                    setConsentInvalid(false);
+                    setSubmitError(null);
+                  }
+                }}
+                lang={lang}
+                invalid={consentInvalid}
+              />
 
               {/* Error */}
               {submitError && (

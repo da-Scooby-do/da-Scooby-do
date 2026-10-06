@@ -4,6 +4,8 @@ import { submitPublicRequest } from '@/lib/publicRequests';
 import type { ProjectRequestRecord, ProjectRequestDraft, ProjectRequestStatus } from './types';
 
 interface ServiceRequestData {
+  /** Customer ticked the terms & privacy consent. */
+  termsAccepted: boolean;
   customerName: string;
   companyName: string;
   phone: string;
@@ -29,7 +31,7 @@ interface ServicesContextValue {
   submitting: boolean;
   submitError: string | null;
   submitServiceRequest: (data: ServiceRequestData) => Promise<{ success: boolean; record?: ProjectRequestRecord; error?: string }>;
-  submitRequest: (draft: ProjectRequestDraft) => Promise<{ success: boolean; record?: ProjectRequestRecord; error?: string }>;
+  submitRequest: (draft: ProjectRequestDraft, termsAccepted: boolean) => Promise<{ success: boolean; record?: ProjectRequestRecord; error?: string }>;
   requests: ProjectRequestRecord[];
   loadingRequests: boolean;
   fetchRequests: () => Promise<void>;
@@ -48,7 +50,7 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const insertData: Record<string, string | null> = {
+      const insertData: Record<string, string | boolean | null> = {
         customer_name: data.customerName,
         company_name: data.companyName || null,
         phone: data.phone,
@@ -69,16 +71,11 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
         preferred_visit_date: data.preferredVisitDate || null,
         notes: data.notes || null,
         status: 'new',
+        terms_accepted: data.termsAccepted,
       };
 
-      const { data: result, error } = await supabase
-        .from('project_requests')
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, record: result as ProjectRequestRecord };
+      const result = await submitPublicRequest('project_requests', insertData);
+      return { success: true, record: result as unknown as ProjectRequestRecord };
     } catch (err) {
       console.error('Service request submission failed', err);
       const msg = 'تعذر إرسال الطلب. يرجى المحاولة مرة أخرى. / We could not submit your request. Please try again.';
@@ -89,7 +86,7 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const submitRequest: ServicesContextValue['submitRequest'] = async (draft) => {
+  const submitRequest: ServicesContextValue['submitRequest'] = async (draft, termsAccepted) => {
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -107,6 +104,7 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
         estimated_budget: draft.estimatedBudget || null,
         expected_start: draft.expectedStart || null,
         status: 'new',
+        terms_accepted: termsAccepted,
       };
 
       const data = await submitPublicRequest('project_requests', insertData);
