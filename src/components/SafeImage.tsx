@@ -1,6 +1,27 @@
 import { useEffect, useState, type ImgHTMLAttributes } from 'react';
 import { ImageOff } from 'lucide-react';
 
+/**
+ * For Pexels photos, offer several widths so phones download a small version
+ * instead of the full-size image. Other hosts are returned unchanged.
+ */
+export function responsiveSrcSet(src?: string): string | undefined {
+  if (!src || !src.includes('images.pexels.com')) return undefined;
+  try {
+    return [480, 800, 1280, 1920]
+      .map((w) => {
+        const u = new URL(src);
+        u.searchParams.set('auto', 'compress');
+        u.searchParams.set('cs', 'tinysrgb');
+        u.searchParams.set('w', String(w));
+        return `${u.toString()} ${w}w`;
+      })
+      .join(', ');
+  } catch {
+    return undefined;
+  }
+}
+
 interface SafeImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   /** Text shown on the placeholder when the image is missing or fails to load. */
   fallbackLabel?: string;
@@ -28,5 +49,17 @@ export default function SafeImage({ src, alt, className = '', fallbackLabel, ...
     );
   }
 
-  return <img src={src} alt={alt} className={className} onError={() => setFailed(true)} {...rest} />;
+  return (
+    <img
+      src={src}
+      srcSet={responsiveSrcSet(src)}
+      sizes={rest.sizes || '(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw'}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      decoding="async"
+      onError={() => setFailed(true)}
+      {...rest}
+    />
+  );
 }

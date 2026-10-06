@@ -415,3 +415,10 @@ section[id] {
     transform: none;
   }
 }
+
+/* Phones/tablets: skip the full-screen grain blend, it costs the most to paint */
+@media (pointer: coarse) {
+  .film-grain {
+    display: none;
+  }
+}

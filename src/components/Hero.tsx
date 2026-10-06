@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ChevronLeft } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useSiteContent } from '@/contexts/SiteContentContext';
+import { responsiveSrcSet } from '@/components/SafeImage';
 
 /** Counts the numeric part of a stat (e.g. "+10") up from zero once visible. */
 function CountUp({ value }: { value: string }) {
@@ -114,7 +115,7 @@ export default function Hero() {
       className="relative min-h-[100svh] flex items-center overflow-hidden bg-black"
     >
       <div ref={bgRef} className="absolute inset-0 z-0 will-change-transform">
-        <img src={heroImage} alt="" className="w-full h-full object-cover hero-kenburns" />
+        <img src={heroImage} srcSet={responsiveSrcSet(heroImage)} sizes="100vw" alt="" decoding="async" className="w-full h-full object-cover hero-kenburns" />
         <div className="absolute inset-0 bg-gradient-to-r from-black via-black/80 to-black/40" />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30" />
       </div>
