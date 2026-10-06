@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { submitPublicRequest } from '@/lib/publicRequests';
 import type { ProjectRequestRecord, ProjectRequestDraft, ProjectRequestStatus } from './types';
 
 interface ServiceRequestData {
@@ -108,14 +109,8 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
         status: 'new',
       };
 
-      const { data, error } = await supabase
-        .from('project_requests')
-        .insert(insertData)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return { success: true, record: data as ProjectRequestRecord };
+      const data = await submitPublicRequest('project_requests', insertData);
+      return { success: true, record: data as unknown as ProjectRequestRecord };
     } catch (err) {
       console.error('Service request submission failed', err);
       const msg = 'تعذر إرسال الطلب. يرجى المحاولة مرة أخرى. / We could not submit your request. Please try again.';

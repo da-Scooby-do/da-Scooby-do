@@ -34,6 +34,7 @@ export interface SiteSettings {
   snapchat_url: string;
   youtube_url: string;
   cr_number: string;
+  unified_number: string;
   vat_number: string;
   logo_ar: string;
   logo_en: string;
@@ -82,6 +83,7 @@ const defaultSettings: SiteSettings = {
   snapchat_url: '',
   youtube_url: '',
   cr_number: '',
+  unified_number: '',
   vat_number: '',
   logo_ar: '',
   logo_en: '',

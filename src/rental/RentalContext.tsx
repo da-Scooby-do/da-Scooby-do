@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { submitPublicRequest } from '@/lib/publicRequests';
 import type { RentalRequestRow, RentalRequestStatus, RentalDuration, RentalRequest, RentalRequestDraft } from './types';
 import type { CompanyProfile } from '@/customer/types';
 import { generateRequestNumber } from './types';
@@ -88,16 +89,11 @@ export function RentalProvider({ children }: { children: ReactNode }) {
       status: 'new' as RentalRequestStatus,
     };
 
-    const { data: inserted, error: insertError } = await supabase
-      .from('rental_requests')
-      .insert(insertData)
-      .select()
-      .single();
+    const inserted = await submitPublicRequest('rental_requests', insertData);
 
-    if (insertError) throw insertError;
-
-    await reload();
-    return inserted as RentalRequestRow;
+    // Only staff/customers can list requests; a failed reload must not hide a successful submit.
+    reload().catch(() => {});
+    return inserted as unknown as RentalRequestRow;
   };
 
   const updateStatus = async (id: string, status: RentalRequestStatus) => {

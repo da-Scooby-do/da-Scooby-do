@@ -36,7 +36,9 @@ export default function Footer() {
   const address = isRtl ? addressAr : addressEn;
   const businessHours = isRtl ? (settings?.business_hours_ar || '') : (settings?.business_hours_en || '');
   const mapsLink = settings?.maps_link || '';
-  const crNumber = settings?.cr_number || '';
+  const unifiedNumber = settings?.unified_number || '';
+  // Hide the CR line when it repeats the unified number.
+  const crNumber = settings?.cr_number && settings.cr_number !== unifiedNumber ? settings.cr_number : '';
   const vatNumber = settings?.vat_number || '';
 
   const navItems = [
@@ -205,6 +207,12 @@ export default function Footer() {
                 {isRtl ? 'الاسم التجاري' : 'Company Name'}:
                 <span className="text-base-primary block text-xs mt-0.5">{isRtl ? companyFullNameAr : companyFullNameEn}</span>
               </li>
+              {unifiedNumber && (
+                <li className="text-sm text-base-muted">
+                  {isRtl ? 'الرقم الوطني الموحد' : 'Unified National Number'}:
+                  <span className="text-base-primary block text-xs mt-0.5" dir="ltr">{unifiedNumber}</span>
+                </li>
+              )}
               {crNumber && (
                 <li className="text-sm text-base-muted">
                   {isRtl ? 'رقم السجل التجاري' : 'CR Number'}:
