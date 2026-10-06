@@ -10,6 +10,14 @@ export type RentalRequestStatus =
   | 'cancelled'
   | 'completed';
 
+/** Who handles equipment transport / provides diesel for a rental. */
+export type ResponsibleParty = 'sahab' | 'customer';
+
+export const responsiblePartyLabels: Record<ResponsibleParty, { ar: string; en: string }> = {
+  sahab: { ar: 'على سحاب', en: 'By SAHAB' },
+  customer: { ar: 'على العميل', en: 'By customer' },
+};
+
 // ─── DB Row Type ─────────────────────────────────────────────
 export interface RentalRequestRow {
   id: string;
@@ -27,6 +35,8 @@ export interface RentalRequestRow {
   project_city: string | null;
   project_location: string | null;
   notes: string | null;
+  transport_by: ResponsibleParty | null;
+  fuel_by: ResponsibleParty | null;
   status: RentalRequestStatus;
   internal_notes: string;
   assigned_to: string | null;
