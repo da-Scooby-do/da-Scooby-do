@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Check, Circle, XCircle, Info } from 'lucide-react';
+import { Check, Circle, XCircle, Info, ArrowLeft, ArrowRight } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
+import { useCustomer } from '@/customer/CustomerContext';
 
 interface QuoteRow { id: string; status: string; quotation_reference: string }
-interface ContractRow { id: string; status: string; po_number: string | null; contract_number: string }
+interface ContractRow { id: string; status: string; po_number: string | null; contract_number: string; signed_at: string | null }
+interface PoRow { status: string }
 interface DeliveryRow { status: string; contract_id: string | null }
 
 export interface TrackedRequest {
@@ -20,27 +22,29 @@ interface Step {
   done: boolean;
   noteAr?: string;
   noteEn?: string;
+  /** Customer action shown while this is the current step. */
+  action?: { view: 'quotations' | 'contracts'; ar: string; en: string };
 }
 
 const CLOSED = ['rejected', 'cancelled'];
 
 /** Builds the website order flow from the request and the quotation / contract / delivery linked to it. */
-function buildSteps(req: TrackedRequest, quotes: QuoteRow[], contracts: ContractRow[], deliveries: DeliveryRow[]): Step[] {
+function buildSteps(req: TrackedRequest, quotes: QuoteRow[], contracts: ContractRow[], deliveries: DeliveryRow[], pos: PoRow[]): Step[] {
   const quoteSent = quotes.some((q) => !['draft', 'ready_to_send'].includes(q.status));
   const accepted = quotes.some((q) => q.status === 'accepted') || ['awaiting_po', 'approved', 'completed'].includes(req.status);
   const contract = contracts[0];
-  const poUploaded = !!contract?.po_number || ['approved', 'completed'].includes(req.status);
-  const signed = !!contract && ['active', 'completed', 'signed', 'expired'].includes(contract.status);
+  const poUploaded = pos.some((p) => p.status !== 'rejected') || !!contract?.po_number || ['approved', 'completed'].includes(req.status);
+  const signed = !!contract && (!!contract.signed_at || ['active', 'completed', 'signed', 'expired'].includes(contract.status));
   const delivered = deliveries.some((d) => d.status === 'delivered') || req.status === 'completed';
 
   const steps: Step[] = [
     { key: 'sent', ar: 'إرسال الطلب', en: 'Request sent', done: true },
     { key: 'review', ar: 'سحاب تراجع الطلب', en: 'SAHAB reviews the request', done: req.status !== 'new' || quoteSent },
     { key: 'quote', ar: 'عرض السعر', en: 'Quotation', done: quoteSent, noteAr: quoteSent && !accepted ? 'عرض السعر جاهز في صفحة «عروض الأسعار»' : undefined, noteEn: quoteSent && !accepted ? 'Your quotation is ready on the Quotations page' : undefined },
-    { key: 'accept', ar: 'قبول العميل', en: 'Customer acceptance', done: accepted },
-    { key: 'po', ar: 'رفع أمر الشراء (PO)', en: 'Purchase order (PO)', done: poUploaded },
-    { key: 'contract', ar: 'عقد التأجير', en: 'Rental contract', done: !!contract },
-    { key: 'sign', ar: 'التوقيع', en: 'Signing', done: signed },
+    { key: 'accept', ar: 'قبول العميل', en: 'Customer acceptance', done: accepted, action: { view: 'quotations', ar: 'راجع عرض السعر واقبله', en: 'Review and accept the quotation' } },
+    { key: 'po', ar: 'رفع أمر الشراء (PO)', en: 'Purchase order (PO)', done: poUploaded, action: { view: 'quotations', ar: 'ارفع أمر الشراء', en: 'Upload the PO' } },
+    { key: 'contract', ar: 'عقد التأجير', en: 'Rental contract', done: !!contract, noteAr: !contract && poUploaded ? 'سحاب تراجع أمر الشراء وتُعد العقد' : undefined, noteEn: !contract && poUploaded ? 'SAHAB is reviewing the PO and preparing the contract' : undefined },
+    { key: 'sign', ar: 'التوقيع', en: 'Signing', done: signed, action: contract ? { view: 'contracts', ar: 'وقّع العقد', en: 'Sign the contract' } : undefined },
     { key: 'payment', ar: 'الدفع (خارج المنصة)', en: 'Payment (outside the platform)', done: signed, noteAr: 'يتم الدفع مباشرة مع سحاب حسب شروط العقد', noteEn: 'Paid directly to SAHAB per the contract terms' },
   ];
   if (req.kind === 'rental') {
@@ -58,13 +62,14 @@ function buildSteps(req: TrackedRequest, quotes: QuoteRow[], contracts: Contract
 }
 
 export function useRequestProgress(req: TrackedRequest) {
-  const [steps, setSteps] = useState<Step[]>(() => buildSteps(req, [], [], []));
+  const [steps, setSteps] = useState<Step[]>(() => buildSteps(req, [], [], [], []));
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [q, c] = await Promise.all([
+      const [q, c, po] = await Promise.all([
         supabase.from('quotations').select('id,status,quotation_reference').eq('request_id', req.id),
-        supabase.from('contracts').select('id,status,po_number,contract_number').eq('request_id', req.id),
+        supabase.from('contracts').select('id,status,po_number,contract_number,signed_at').eq('request_id', req.id),
+        supabase.from('purchase_orders').select('status').eq('request_id', req.id),
       ]);
       const contracts = (c.data as ContractRow[] | null) || [];
       let deliveries: DeliveryRow[] = [];
@@ -72,7 +77,7 @@ export function useRequestProgress(req: TrackedRequest) {
         const d = await supabase.from('deliveries').select('status,contract_id').in('contract_id', contracts.map((x) => x.id));
         deliveries = (d.data as DeliveryRow[] | null) || [];
       }
-      if (!cancelled) setSteps(buildSteps(req, (q.data as QuoteRow[] | null) || [], contracts, deliveries));
+      if (!cancelled) setSteps(buildSteps(req, (q.data as QuoteRow[] | null) || [], contracts, deliveries, (po.data as PoRow[] | null) || []));
     })().catch(() => {});
     return () => {
       cancelled = true;
@@ -107,6 +112,7 @@ export function RequestProgressBar({ req }: { req: TrackedRequest }) {
 export default function RequestTracker({ req }: { req: TrackedRequest }) {
   const { lang } = useApp();
   const ar = lang === 'ar';
+  const { setView } = useCustomer();
   const steps = useRequestProgress(req);
   const current = steps.find((s) => !s.done);
 
@@ -144,6 +150,11 @@ export default function RequestTracker({ req }: { req: TrackedRequest }) {
                 </div>
                 {(s.noteAr || s.noteEn) && (s.done || isCurrent) && (
                   <div className="text-xs text-base-muted mt-0.5 flex items-center gap-1"><Info size={12} />{ar ? s.noteAr : s.noteEn}</div>
+                )}
+                {isCurrent && s.action && (
+                  <button type="button" onClick={() => setView(s.action!.view)} className="btn-primary text-xs px-3 py-1.5 mt-2">
+                    {ar ? s.action.ar : s.action.en} {ar ? <ArrowLeft size={13} /> : <ArrowRight size={13} />}
+                  </button>
                 )}
               </div>
             </li>

@@ -100,7 +100,7 @@ export default function CustomerLayout({ children }: { children: React.ReactNode
             <div className="w-8 h-8 bg-yellow-accent rounded-lg flex items-center justify-center font-black text-black text-lg">S</div>
             <span className="text-sm font-black text-base-primary">SAHAB</span>
           </div>
-          <button onClick={() => setMobileOpen(!mobileOpen)} className="p-2 rounded-lg border border-base text-base-muted">
+          <button onClick={() => setMobileOpen(!mobileOpen)} aria-label={lang === 'ar' ? 'القائمة' : 'Menu'} aria-expanded={mobileOpen} className="p-2 rounded-lg border border-base text-base-muted">
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>
           {user && (

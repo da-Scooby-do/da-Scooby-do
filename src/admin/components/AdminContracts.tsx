@@ -152,7 +152,7 @@ export default function AdminContracts() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-xs font-mono font-bold text-yellow-accent">{c.contract_number}</span>
-                    {c.document_path && <span className="px-1.5 py-0.5 rounded text-xs bg-green-500/10 text-green-500 font-semibold">{ar ? 'موقّع' : 'Signed'}</span>}
+                    {c.signed_at && <span className="px-1.5 py-0.5 rounded text-xs bg-green-500/10 text-green-500 font-semibold">{ar ? 'موقّع' : 'Signed'}</span>}
                     <span className="text-xs text-base-muted">• {fmtDate(c.start_date)}</span>
                   </div>
                   <div className="text-sm font-bold text-base-primary">{c.title || c.customer_name} • {c.company_name || '—'}</div>
@@ -216,6 +216,35 @@ export default function AdminContracts() {
 
               {viewing.notes && <div><span className="text-xs text-base-muted">{ar ? 'ملاحظات' : 'Notes'}: </span><span className="text-sm text-base-primary">{viewing.notes}</span></div>}
 
+              {/* Customer signature */}
+              <div className="pt-3 border-t border-base">
+                <h4 className="text-xs font-bold text-yellow-accent uppercase mb-2">{ar ? 'توقيع العميل' : 'Customer signature'}</h4>
+                {viewing.signed_at ? (
+                  <div className="flex flex-wrap items-center gap-4">
+                    {viewing.signature_image && <img src={viewing.signature_image} alt={ar ? 'توقيع العميل' : 'Customer signature'} className="h-20 w-auto max-w-[240px] rounded-lg bg-white border border-base p-1" />}
+                    <div className="text-sm">
+                      <div className="font-semibold text-base-primary">{viewing.signed_by_name}{viewing.signed_by_title ? ` — ${viewing.signed_by_title}` : ''}</div>
+                      <div className="text-xs text-base-muted">{new Date(viewing.signed_at).toLocaleString(ar ? 'ar-SA' : 'en-US')}</div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-xs text-base-muted">
+                      {!viewing.customer_email
+                        ? (ar ? 'هذا العقد غير مرتبط بحساب عميل (لا يوجد بريد)، لذلك لا يمكن توقيعه من الموقع.' : 'This contract is not linked to a customer account (no email), so it cannot be signed online.')
+                        : viewing.status === 'ready' || viewing.status === 'pending_signature'
+                          ? (ar ? `بانتظار توقيع العميل من حسابه (${viewing.customer_email}).` : `Waiting for the customer to sign from their account (${viewing.customer_email}).`)
+                          : (ar ? 'غيّر الحالة إلى «بانتظار التوقيع» ليظهر زر التوقيع للعميل في حسابه.' : 'Set the status to "Pending signature" so the customer can sign it from their account.')}
+                    </p>
+                    {canEdit && viewing.customer_email && viewing.status === 'draft' && (
+                      <button onClick={() => handleChangeStatus('pending_signature')} disabled={statusChanging} className="btn-primary text-xs px-3 py-2">
+                        <PenTool size={14} /> {ar ? 'إرسال للعميل للتوقيع' : 'Send to customer for signing'}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Document upload */}
               <div className="pt-3 border-t border-base">
                 <h4 className="text-xs font-bold text-yellow-accent uppercase mb-2">{ar ? 'مستند العقد' : 'Contract Document'}</h4>
@@ -229,9 +258,9 @@ export default function AdminContracts() {
                   <div>
                     {canEdit && <button onClick={() => fileRef.current?.click()} disabled={uploading} className="btn-secondary text-sm flex items-center gap-2">
                       {uploading ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
-                      {ar ? 'رفع العقد الموقّع' : 'Upload Signed Contract'}
+                      {ar ? 'رفع مستند العقد' : 'Upload contract document'}
                     </button>}
-                    <p className="text-xs text-base-muted mt-2">{ar ? 'PDF, JPG, PNG — ارفع العقد بعد التوقيع' : 'PDF, JPG, PNG — upload after signing'}</p>
+                    <p className="text-xs text-base-muted mt-2">{ar ? 'PDF, JPG, PNG — يظهر للعميل ليقرأه قبل التوقيع' : 'PDF, JPG, PNG — the customer reads it before signing'}</p>
                   </div>
                 )}
                 <input ref={fileRef} type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={handleUpload} />

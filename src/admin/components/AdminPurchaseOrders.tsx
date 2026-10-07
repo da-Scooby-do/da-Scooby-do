@@ -155,6 +155,8 @@ export default function AdminPurchaseOrders() {
                     <span className="text-xs font-mono font-bold text-yellow-accent">{p.po_number}</span>
                     <span className="text-xs text-base-muted">• {fmtDate(p.po_date)}</span>
                     {p.document_path && <span className="px-1.5 py-0.5 rounded text-xs bg-green-500/10 text-green-500 font-semibold">{ar ? 'مستند' : 'Doc'}</span>}
+                    {p.submitted_by_customer && <span className="px-1.5 py-0.5 rounded text-xs bg-cyan-500/10 text-cyan-500 font-semibold">{ar ? 'من العميل' : 'From customer'}</span>}
+                    {p.customer_po_number && <span className="text-xs text-base-muted" dir="ltr">• {p.customer_po_number}</span>}
                   </div>
                   <div className="text-sm font-bold text-base-primary">{p.customer_name} • {p.company_name || '—'}</div>
                   <div className="text-xs text-base-muted">{ar ? 'العرض' : 'Quotation'}: {p.quotation_reference || '—'}</div>
@@ -212,6 +214,8 @@ export default function AdminPurchaseOrders() {
                 <div><span className="text-base-muted">{ar ? 'التاريخ' : 'Date'}: </span><span className="font-semibold text-base-primary">{fmtDate(viewing.po_date)}</span></div>
                 <div><span className="text-base-muted">{ar ? 'العرض' : 'Quotation'}: </span><span className="font-semibold text-base-primary">{viewing.quotation_reference || '—'}</span></div>
                 <div><span className="text-base-muted">{ar ? 'الطلب' : 'Request'}: </span><span className="font-semibold text-base-primary">{viewing.request_reference || '—'}</span></div>
+                {viewing.customer_po_number && <div><span className="text-base-muted">{ar ? 'رقم أمر الشراء لدى العميل' : "Customer's PO number"}: </span><span className="font-semibold text-base-primary" dir="ltr">{viewing.customer_po_number}</span></div>}
+                {viewing.submitted_by_customer && <div><span className="text-base-muted">{ar ? 'المصدر' : 'Source'}: </span><span className="font-semibold text-cyan-500">{ar ? 'رفعه العميل من حسابه' : 'Uploaded by the customer'}</span></div>}
               </div>
 
               {/* Amount mismatch warning */}
