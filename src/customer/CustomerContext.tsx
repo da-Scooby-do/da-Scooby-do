@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
+import { authReturnUrl, isEmailNotConfirmed } from '@/lib/authRedirect';
 import type { CustomerUser, CompanyProfile, CustomerView } from './types';
 import { emptyCompanyProfile } from './types';
 import { loadCompanyProfile, saveCompanyProfile } from '@/lib/customerProfile';
@@ -106,6 +107,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     if (!email.trim()) return 'البريد الإلكتروني مطلوب / Email is required';
     if (!password) return 'كلمة المرور مطلوبة / Password is required';
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (isEmailNotConfirmed(error)) return 'EMAIL_NOT_CONFIRMED';
     if (error) {
       console.error('Sign-in failed', error);
       return 'بيانات الدخول غير صحيحة / Invalid email or password';
@@ -125,7 +127,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       password: data.password,
       options: {
         data: { full_name: data.fullName, mobile: data.mobile },
-        emailRedirectTo: `${window.location.origin}/#/account`,
+        emailRedirectTo: authReturnUrl('verified'),
       },
     });
     if (error) {

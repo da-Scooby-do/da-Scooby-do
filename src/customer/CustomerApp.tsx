@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { CheckCircle2, X } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { CheckCircle2, X, AlertCircle } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCustomer } from './CustomerContext';
 import AuthPages from './components/AuthPages';
@@ -7,6 +7,41 @@ import CompanyOnboarding from './components/CompanyOnboarding';
 import CustomerRouter from './CustomerRouter';
 import { clearPendingRequest, loadPendingRequest } from '@/lib/pendingRequest';
 import { submitPublicRequest } from '@/lib/publicRequests';
+import { takeAuthNotice, type AuthNotice } from '@/lib/authRedirect';
+
+const NOTICES: Record<AuthNotice, { ok: boolean; ar: [string, string]; en: [string, string] }> = {
+  verified: { ok: true, ar: ['تم تفعيل حسابك بنجاح ✓', 'مرحباً بك في سحاب. يمكنك الآن إرسال طلباتك ومتابعتها من حسابك.'], en: ['Your account is verified ✓', 'Welcome to SAHAB. You can now send and track your requests from your account.'] },
+  google: { ok: true, ar: ['تم تسجيل الدخول باستخدام Google', 'مرحباً بك في سحاب.'], en: ['Signed in with Google', 'Welcome to SAHAB.'] },
+  recovery: { ok: true, ar: ['تم التحقق من بريدك', 'اختر كلمة مرور جديدة من صفحة الإعدادات.'], en: ['Email verified', 'Choose a new password on the Settings page.'] },
+  'link-expired': { ok: false, ar: ['انتهت صلاحية الرابط', 'الرابط منتهي أو استُخدم من قبل. سجّل الدخول، وإن لم يكن حسابك مفعّلاً اطلب رابط تفعيل جديداً.'], en: ['This link has expired', 'The link expired or was already used. Sign in, and if your account is not active yet request a new activation link.'] },
+  'link-error': { ok: false, ar: ['تعذر التحقق من الرابط', 'سجّل الدخول، وإن لم يكن حسابك مفعّلاً اطلب رابط تفعيل جديداً.'], en: ['We could not verify the link', 'Sign in, and if your account is not active yet request a new activation link.'] },
+  'oauth-error': { ok: false, ar: ['تعذر تسجيل الدخول عبر Google', 'حاول مرة أخرى أو سجّل الدخول بالبريد الإلكتروني.'], en: ['Google sign-in failed', 'Try again or sign in with your email.'] },
+};
+
+function AuthNoticeToast({ notice, onClose }: { notice: AuthNotice; onClose: () => void }) {
+  const { lang } = useApp();
+  const n = NOTICES[notice];
+  const [title, body] = lang === 'ar' ? n.ar : n.en;
+  useEffect(() => {
+    if (!n.ok) return;
+    const t = window.setTimeout(onClose, 9000);
+    return () => window.clearTimeout(t);
+  }, [n.ok, onClose]);
+  return (
+    <div role={n.ok ? 'status' : 'alert'} className="fixed top-4 inset-x-4 sm:inset-x-auto sm:end-4 z-[160] max-w-md mx-auto sm:mx-0 animate-fade-in-up">
+      <div className={`flex items-start gap-3 p-4 rounded-xl border shadow-2xl bg-elevated ${n.ok ? 'border-green-500/40' : 'border-red-500/40'}`}>
+        {n.ok ? <CheckCircle2 size={22} className="text-green-500 shrink-0" /> : <AlertCircle size={22} className="text-red-500 shrink-0" />}
+        <div className="text-sm flex-1">
+          <div className={`font-bold ${n.ok ? 'text-base-primary' : 'text-red-500'}`}>{title}</div>
+          <div className="text-base-muted">{body}</div>
+        </div>
+        <button onClick={onClose} className="text-base-muted hover:text-yellow-accent" aria-label={lang === 'ar' ? 'إغلاق' : 'Close'}>
+          <X size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function CustomerApp() {
   const { lang } = useApp();
@@ -15,6 +50,15 @@ export default function CustomerApp() {
   const [sentRef, setSentRef] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
   const sending = useRef(false);
+  const [notice, setNotice] = useState<AuthNotice | null>(null);
+  const closeNotice = useCallback(() => setNotice(null), []);
+
+  useEffect(() => {
+    const n = takeAuthNotice();
+    if (!n) return;
+    setNotice(n);
+    if (n === 'recovery') setView('settings');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // A request filled in before signing in (e.g. while confirming the email) is sent
   // once the customer is signed in with a company profile.
@@ -26,6 +70,7 @@ export default function CustomerApp() {
       .then((row) => {
         clearPendingRequest();
         setSentRef(row.request_reference || '—');
+        setNotice(null);
         setView(p.table === 'rental_requests' ? 'rental-requests' : 'project-requests');
       })
       .catch((err) => {
@@ -43,16 +88,19 @@ export default function CustomerApp() {
     );
   }
 
+  const toast = notice && <AuthNoticeToast notice={notice} onClose={closeNotice} />;
+
   if (!isAuthenticated) {
-    return <AuthPages pendingLabel={pending?.label} />;
+    return <>{toast}<AuthPages pendingLabel={pending?.label} /></>;
   }
 
   if (hasCompany === false) {
-    return <CompanyOnboarding pendingLabel={pending?.label} />;
+    return <>{toast}<CompanyOnboarding pendingLabel={pending?.label} /></>;
   }
 
   return (
     <>
+      {toast}
       {(sentRef || sendError) && (
         <div className="fixed top-4 inset-x-4 sm:inset-x-auto sm:end-4 z-[150] max-w-md mx-auto sm:mx-0 animate-fade-in-up">
           <div className={`flex items-start gap-3 p-4 rounded-xl border shadow-2xl bg-elevated ${sentRef ? 'border-green-500/40' : 'border-red-500/40'}`}>

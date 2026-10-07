@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { X, LogIn, UserPlus, Building2, MailCheck, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
+import { X, LogIn, UserPlus, Building2, MailCheck, Loader2, AlertCircle, ArrowRight, RefreshCw } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useApp } from '@/contexts/AppContext';
 import { COMPANY_FIELDS, REQUIRED_COMPANY_FIELDS, emptyCompanyProfile, loadCompanyProfile, missingCompanyFields, saveCompanyProfile } from '@/lib/customerProfile';
 import { clearPendingRequest, savePendingRequest, type PendingRequest } from '@/lib/pendingRequest';
 import type { CompanyProfile } from '@/customer/types';
+import { PasswordInput, GoogleSignInButton } from './AuthExtras';
+import { authReturnUrl, isEmailNotConfirmed, resendConfirmation } from '@/lib/authRedirect';
 
 type Step = 'login' | 'register' | 'company' | 'confirm-email';
 type Pending = Omit<PendingRequest, 'savedAt'>;
@@ -51,6 +53,8 @@ export default function CustomerGate() {
   const [mobile, setMobile] = useState('');
   const [company, setCompany] = useState<CompanyProfile>(emptyCompanyProfile());
   const [invalid, setInvalid] = useState<(keyof CompanyProfile)[]>([]);
+  const [notConfirmed, setNotConfirmed] = useState(false);
+  const [resend, setResend] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
 
   useEffect(() => {
     openGate = (s) => {
@@ -58,6 +62,8 @@ export default function CustomerGate() {
       setStep(s.step);
       setError(null);
       setInvalid([]);
+      setNotConfirmed(false);
+      setResend('idle');
       if (s.step === 'company') {
         supabase.auth.getSession().then(async ({ data: { session } }) => {
           if (!session?.user) return;
@@ -117,6 +123,8 @@ export default function CustomerGate() {
   const onLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotConfirmed(false);
+    setResend('idle');
     if (!email.trim() || !password) {
       setError(ar ? 'أدخل البريد الإلكتروني وكلمة المرور' : 'Enter your email and password');
       return;
@@ -124,8 +132,15 @@ export default function CustomerGate() {
     setBusy(true);
     const { data, error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     setBusy(false);
+    if (isEmailNotConfirmed(err)) {
+      // Keep the request so it is sent once they confirm and sign in.
+      savePendingRequest(state.pending);
+      setNotConfirmed(true);
+      setError(ar ? 'حسابك لم يُفعّل بعد. افتح رابط التفعيل الذي أرسلناه إلى بريدك، أو اطلب رابطاً جديداً.' : 'Your account is not activated yet. Open the activation link we emailed you, or request a new one.');
+      return;
+    }
     if (err || !data.user) {
-      setError(ar ? 'بيانات الدخول غير صحيحة، أو لم يتم تفعيل الحساب من البريد بعد' : 'Invalid email or password, or the account is not confirmed yet');
+      setError(ar ? 'البريد الإلكتروني أو كلمة المرور غير صحيحة' : 'Incorrect email or password');
       return;
     }
     await continueAfterAuth(data.user.id, data.user.email || email.trim(), data.user.user_metadata || {});
@@ -152,7 +167,7 @@ export default function CustomerGate() {
       password,
       options: {
         data: { full_name: fullName.trim(), mobile: mobile.trim() },
-        emailRedirectTo: `${window.location.origin}/#/account`,
+        emailRedirectTo: authReturnUrl('verified'),
       },
     });
     setBusy(false);
@@ -196,6 +211,26 @@ export default function CustomerGate() {
       setBusy(false);
     }
   };
+
+  const onResend = async () => {
+    setResend('sending');
+    setResend((await resendConfirmation(email)) ? 'sent' : 'failed');
+  };
+
+  const resendBlock = (
+    <div className="space-y-2">
+      <button type="button" onClick={onResend} disabled={resend === 'sending' || resend === 'sent' || !email.includes('@')} className="btn-secondary w-full justify-center text-sm disabled:opacity-60">
+        {resend === 'sending' ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
+        {ar ? 'إعادة إرسال رابط التفعيل' : 'Resend activation link'}
+      </button>
+      {resend === 'sent' && <p role="status" className="text-xs text-green-500 text-center">{ar ? 'أرسلنا رابط تفعيل جديداً. تحقق من بريدك (وملف الرسائل غير المرغوب فيها).' : 'We sent a new activation link. Check your inbox (and spam folder).'}</p>}
+      {resend === 'failed' && <p role="alert" className="text-xs text-red-500 text-center">{ar ? 'تعذر الإرسال الآن، انتظر دقيقة ثم حاول مرة أخرى.' : 'Could not send right now. Wait a minute and try again.'}</p>}
+    </div>
+  );
+
+  const googleBlock = (
+    <GoogleSignInButton beforeRedirect={() => savePendingRequest(state.pending)} onError={setError} />
+  );
 
   const input = 'w-full px-4 py-3 rounded-lg bg-base border border-base text-sm text-base-primary focus:border-yellow-accent focus:outline-none transition-colors';
   const label = 'block text-xs font-semibold text-base-muted mb-1.5';
@@ -259,8 +294,10 @@ export default function CustomerGate() {
           {step === 'login' && (
             <form onSubmit={onLogin} className="space-y-4">
               <p className="text-sm text-base-muted">{ar ? 'طلبك جاهز. سجّل الدخول ليُرسل باسم حسابك وتتابعه من لوحة العميل.' : 'Your request is ready. Sign in so it is sent from your account and you can follow it in your dashboard.'}</p>
+              {notConfirmed && resendBlock}
+              {googleBlock}
               <div><label className={label}>{ar ? 'البريد الإلكتروني' : 'Email'}</label><input type="email" dir="ltr" autoComplete="email" className={input} value={email} onChange={(e) => setEmail(e.target.value)} /></div>
-              <div><label className={label}>{ar ? 'كلمة المرور' : 'Password'}</label><input type="password" dir="ltr" autoComplete="current-password" className={input} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
+              <div><label className={label}>{ar ? 'كلمة المرور' : 'Password'}</label><PasswordInput autoComplete="current-password" className={input} value={password} onChange={setPassword} /></div>
               <button type="submit" disabled={busy} className="btn-primary w-full justify-center disabled:opacity-60">
                 {busy ? <Loader2 size={18} className="animate-spin" /> : <LogIn size={18} />}
                 {ar ? 'تسجيل الدخول' : 'Sign in'}
@@ -276,14 +313,15 @@ export default function CustomerGate() {
 
           {step === 'register' && (
             <form onSubmit={onRegister} className="space-y-4">
+              {googleBlock}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div><label className={label}>{ar ? 'الاسم الكامل' : 'Full name'} *</label><input className={input} autoComplete="name" value={fullName} onChange={(e) => setFullName(e.target.value)} /></div>
                 <div><label className={label}>{ar ? 'رقم الجوال' : 'Mobile'} *</label><input type="tel" dir="ltr" autoComplete="tel" placeholder="05xxxxxxxx" className={input} value={mobile} onChange={(e) => setMobile(e.target.value)} /></div>
               </div>
               <div><label className={label}>{ar ? 'البريد الإلكتروني' : 'Email'} *</label><input type="email" dir="ltr" autoComplete="email" className={input} value={email} onChange={(e) => setEmail(e.target.value)} /></div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div><label className={label}>{ar ? 'كلمة المرور' : 'Password'} *</label><input type="password" dir="ltr" autoComplete="new-password" className={input} value={password} onChange={(e) => setPassword(e.target.value)} /></div>
-                <div><label className={label}>{ar ? 'تأكيد كلمة المرور' : 'Confirm password'} *</label><input type="password" dir="ltr" autoComplete="new-password" className={input} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} /></div>
+                <div><label className={label}>{ar ? 'كلمة المرور' : 'Password'} *</label><PasswordInput autoComplete="new-password" className={input} value={password} onChange={setPassword} /></div>
+                <div><label className={label}>{ar ? 'تأكيد كلمة المرور' : 'Confirm password'} *</label><PasswordInput autoComplete="new-password" className={input} value={confirmPassword} onChange={setConfirmPassword} /></div>
               </div>
               <button type="submit" disabled={busy} className="btn-primary w-full justify-center disabled:opacity-60">
                 {busy ? <Loader2 size={18} className="animate-spin" /> : <UserPlus size={18} />}
@@ -334,6 +372,8 @@ export default function CustomerGate() {
                   ? <>أرسلنا رابط التفعيل إلى <span dir="ltr" className="text-base-primary">{email}</span>. افتح الرابط ثم سجّل الدخول، وأكمل بيانات الشركة — <span className="text-yellow-accent font-semibold">طلبك محفوظ على هذا الجهاز وسيُرسل تلقائياً</span>.</>
                   : <>We sent a confirmation link to <span className="text-base-primary">{email}</span>. Open it, sign in and complete your company profile — <span className="text-yellow-accent font-semibold">your request is saved on this device and will be sent automatically</span>.</>}
               </p>
+              <p className="text-xs text-base-muted">{ar ? 'لم يصلك البريد؟ تحقق من الرسائل غير المرغوب فيها، أو أعد الإرسال.' : "Didn't get it? Check your spam folder, or resend."}</p>
+              {resendBlock}
               <button type="button" onClick={() => finish(null)} className="btn-primary w-full justify-center">{ar ? 'حسناً' : 'OK'}</button>
             </div>
           )}

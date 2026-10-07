@@ -3,6 +3,8 @@ import { Eye, EyeOff, ArrowRight, ArrowLeft, User, Mail, Phone, Lock, CheckCircl
 import { useApp } from '@/contexts/AppContext';
 import { useCustomer } from '../CustomerContext';
 import { supabase } from '@/lib/supabase';
+import { authReturnUrl, resendConfirmation } from '@/lib/authRedirect';
+import { GoogleSignInButton } from '@/components/AuthExtras';
 import type { AuthView } from '../types';
 
 export default function AuthPages({ initialView = 'login', pendingLabel }: { initialView?: AuthView; pendingLabel?: string }) {
@@ -13,6 +15,12 @@ export default function AuthPages({ initialView = 'login', pendingLabel }: { ini
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmSentTo, setConfirmSentTo] = useState<string | null>(null);
+  const [notConfirmed, setNotConfirmed] = useState(false);
+  const [resend, setResend] = useState<'idle' | 'sending' | 'sent' | 'failed'>('idle');
+  const onResend = async (to: string) => {
+    setResend('sending');
+    setResend((await resendConfirmation(to)) ? 'sent' : 'failed');
+  };
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -35,8 +43,13 @@ export default function AuthPages({ initialView = 'login', pendingLabel }: { ini
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setNotConfirmed(false);
+    setResend('idle');
     const err = await login(loginEmail, loginPassword);
-    if (err) setError(err);
+    if (err === 'EMAIL_NOT_CONFIRMED') {
+      setNotConfirmed(true);
+      setError(lang === 'ar' ? 'حسابك لم يُفعّل بعد. افتح رابط التفعيل الذي أرسلناه إلى بريدك، أو اطلب رابطاً جديداً.' : 'Your account is not activated yet. Open the activation link we emailed you, or request a new one.');
+    } else if (err) setError(err);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -72,7 +85,7 @@ export default function AuthPages({ initialView = 'login', pendingLabel }: { ini
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         forgotEmail.trim(),
-        { redirectTo: window.location.origin + '#/account' }
+        { redirectTo: authReturnUrl('recovery') }
       );
       if (resetError) throw resetError;
       setForgotSent(true);
@@ -117,6 +130,9 @@ export default function AuthPages({ initialView = 'login', pendingLabel }: { ini
               {lang === 'ar'
                 ? <>تم إنشاء حسابك. أرسلنا رابط التفعيل إلى <span dir="ltr" className="font-semibold">{confirmSentTo}</span> — افتحه ثم سجّل الدخول.</>
                 : <>Account created. We sent a confirmation link to <span className="font-semibold">{confirmSentTo}</span> — open it, then sign in.</>}
+              <button type="button" onClick={() => onResend(confirmSentTo)} disabled={resend === 'sending' || resend === 'sent'} className="block mt-2 text-xs font-bold text-yellow-accent hover:underline disabled:opacity-60">
+                {resend === 'sent' ? (lang === 'ar' ? 'تم إرسال رابط جديد ✓' : 'New link sent ✓') : (lang === 'ar' ? 'لم يصلك البريد؟ أعد الإرسال' : "Didn't get it? Resend")}
+              </button>
             </div>
           )}
           {view === 'login' && (
@@ -124,6 +140,7 @@ export default function AuthPages({ initialView = 'login', pendingLabel }: { ini
               <h1 className="text-2xl font-black text-base-primary mb-1">{lang === 'ar' ? 'تسجيل الدخول' : 'Login'}</h1>
               <p className="text-sm text-base-muted mb-6">{lang === 'ar' ? 'مرحباً بعودتك إلى حسابك' : 'Welcome back to your account'}</p>
 
+              <div className="mb-4"><GoogleSignInButton onError={setError} /></div>
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
                   <label className={labelClass}>{lang === 'ar' ? 'البريد الإلكتروني' : 'Email'}</label>
@@ -153,6 +170,15 @@ export default function AuthPages({ initialView = 'login', pendingLabel }: { ini
                 </div>
 
                 {error && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-sm">{error}</div>}
+                {notConfirmed && (
+                  <div className="space-y-2">
+                    <button type="button" onClick={() => onResend(loginEmail)} disabled={resend === 'sending' || resend === 'sent'} className="btn-secondary w-full justify-center text-sm disabled:opacity-60">
+                      {lang === 'ar' ? 'إعادة إرسال رابط التفعيل' : 'Resend activation link'}
+                    </button>
+                    {resend === 'sent' && <p role="status" className="text-xs text-green-500 text-center">{lang === 'ar' ? 'أرسلنا رابط تفعيل جديداً. تحقق من بريدك (وملف الرسائل غير المرغوب فيها).' : 'We sent a new activation link. Check your inbox (and spam folder).'}</p>}
+                    {resend === 'failed' && <p role="alert" className="text-xs text-red-500 text-center">{lang === 'ar' ? 'تعذر الإرسال الآن، انتظر دقيقة ثم حاول مرة أخرى.' : 'Could not send right now. Wait a minute and try again.'}</p>}
+                  </div>
+                )}
 
                 <button type="submit" className="btn-primary w-full justify-center">
                   {lang === 'ar' ? 'تسجيل الدخول' : 'Login'}
@@ -176,6 +202,7 @@ export default function AuthPages({ initialView = 'login', pendingLabel }: { ini
               <h1 className="text-2xl font-black text-base-primary mb-1">{lang === 'ar' ? 'إنشاء حساب' : 'Create Account'}</h1>
               <p className="text-sm text-base-muted mb-6">{lang === 'ar' ? 'انضم إلى سحاب لتأجير المعدات والمقاولات' : 'Join SAHAB for equipment rental and contracting'}</p>
 
+              <div className="mb-4"><GoogleSignInButton onError={setError} /></div>
               <form onSubmit={handleRegister} className="space-y-4">
                 <div>
                   <label className={labelClass}>{lang === 'ar' ? 'الاسم الكامل' : 'Full Name'}</label>
