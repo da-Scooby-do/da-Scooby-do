@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { submitPublicRequest } from '@/lib/publicRequests';
+import { requireCustomer } from '@/components/CustomerGate';
 import type { RentalRequestRow, RentalRequestStatus, RentalDuration, RentalRequest, RentalRequestDraft, ResponsibleParty } from './types';
 import type { CompanyProfile } from '@/customer/types';
 import { generateRequestNumber } from './types';
@@ -95,7 +96,14 @@ export function RentalProvider({ children }: { children: ReactNode }) {
       status: 'new' as RentalRequestStatus,
     };
 
-    const inserted = await submitPublicRequest('rental_requests', insertData);
+    // Customers must be signed in with a company profile; the request is sent from their account email.
+    const accountEmail = await requireCustomer({
+      table: 'rental_requests',
+      row: insertData,
+      label: data.equipment_name_ar || data.equipment_name,
+    });
+    if (!accountEmail) return null;
+    const inserted = await submitPublicRequest('rental_requests', { ...insertData, email: accountEmail });
 
     // Only staff/customers can list requests; a failed reload must not hide a successful submit.
     reload().catch(() => {});

@@ -130,6 +130,7 @@ export default function ServiceRequestForm({ preselectedService }: Props) {
     if (errs.length > 0) { setErrors(errs); return; }
     setErrors([]);
     const result = await submitRequest(form, agreed);
+    if (result.deferred) return;
     if (result.success && result.record) {
       setSubmittedRef(result.record.request_reference);
     } else {

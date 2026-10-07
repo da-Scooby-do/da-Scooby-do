@@ -3,6 +3,7 @@ import { Building2, Pencil, Save, X } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCustomer } from '../CustomerContext';
 import type { CompanyProfile } from '../types';
+import { missingCompanyFields } from '@/lib/customerProfile';
 
 export default function CompanyProfilePage() {
   const { lang } = useApp();
@@ -10,9 +11,20 @@ export default function CompanyProfilePage() {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<CompanyProfile>(company);
 
-  const save = () => {
-    updateCompany(form);
-    setEditing(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const save = async () => {
+    const missing = missingCompanyFields(form);
+    if (missing.length) {
+      setSaveError(lang === 'ar' ? 'أكمل الحقول المطلوبة: اسم الشركة، السجل التجاري، هاتف الشركة، المدينة، الشخص المسؤول' : 'Fill in the required fields: company name, CR, company phone, city, contact person');
+      return;
+    }
+    try {
+      await updateCompany(form);
+      setSaveError(null);
+      setEditing(false);
+    } catch {
+      setSaveError(lang === 'ar' ? 'تعذر الحفظ، حاول مرة أخرى' : 'Could not save, please try again');
+    }
   };
   const cancel = () => {
     setForm(company);
@@ -68,6 +80,7 @@ export default function CompanyProfilePage() {
         )}
       </div>
 
+      {saveError && <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-sm text-red-500">{saveError}</div>}
       <div className="card-industrial p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {fields.map((field) => (

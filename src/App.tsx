@@ -16,6 +16,7 @@ import CTA from '@/components/CTA';
 import LegalSection from '@/components/LegalSection';
 import Footer from '@/components/Footer';
 import FloatingActions from '@/components/FloatingActions';
+import CustomerGate from '@/components/CustomerGate';
 import { useAnchorScroll, useCinematicEffects } from '@/hooks/useCinematicEffects';
 
 type RouteType = 'public' | 'catalog' | 'services' | 'admin' | 'customer' | 'legal' | 'project-request';
@@ -87,6 +88,7 @@ function App() {
             <main><Suspense fallback={<RouteLoading />}><CatalogRouter /></Suspense></main>
             <Footer />
             <FloatingActions />
+            <CustomerGate />
           </div>
         </CatalogProvider>
         </RentalProvider>
@@ -105,6 +107,7 @@ function App() {
             <main><Suspense fallback={<RouteLoading />}><ServicesRouter /></Suspense></main>
             <Footer />
             <FloatingActions />
+            <CustomerGate />
           </div>
         </ServicesProvider>
         </SiteContentProvider>
@@ -143,6 +146,7 @@ function App() {
           </main>
           <Footer />
           <FloatingActions />
+            <CustomerGate />
         </div>
       </CatalogProvider>
       </RentalProvider>
