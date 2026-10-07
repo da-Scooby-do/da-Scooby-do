@@ -16,9 +16,32 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | undefined>(undefined);
 
+// Each section of the site (public pages, customer account, admin) mounts its own
+// provider, so the visitor's choices are kept on the device to survive navigation.
+const THEME_KEY = 'sahab.theme';
+const LANG_KEY = 'sahab.lang';
+
+function readStored<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const v = localStorage.getItem(key);
+    if (v && (allowed as readonly string[]).includes(v)) return v as T;
+  } catch {
+    /* storage unavailable */
+  }
+  return fallback;
+}
+
+function store(key: string, value: string) {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>('ar');
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [lang, setLang] = useState<Language>(() => readStored<Language>(LANG_KEY, ['ar', 'en'], 'ar'));
+  const [theme, setTheme] = useState<Theme>(() => readStored<Theme>(THEME_KEY, ['dark', 'light'], 'dark'));
 
   const dir = lang === 'ar' ? 'rtl' : 'ltr';
 
@@ -26,10 +49,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     document.documentElement.setAttribute('dir', dir);
     document.documentElement.setAttribute('lang', lang);
     document.body.setAttribute('dir', dir);
+    store(LANG_KEY, lang);
   }, [dir, lang]);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    store(THEME_KEY, theme);
   }, [theme]);
 
   const toggleLang = () => setLang((prev) => (prev === 'ar' ? 'en' : 'ar'));

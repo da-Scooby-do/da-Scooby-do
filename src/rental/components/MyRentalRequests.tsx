@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Package, Plus, ArrowRight, ArrowLeft, MapPin, Calendar, Truck, Fuel } from 'lucide-react';
+import { Package, Plus, ArrowRight, ArrowLeft, MapPin, Calendar, Truck, Fuel, Hash } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCustomer } from '@/customer/CustomerContext';
 import { useRental } from '@/rental/RentalContext';
@@ -46,6 +46,7 @@ export default function MyRentalRequests() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex items-center gap-2"><Calendar size={15} className="text-yellow-accent" /><span className="text-base-muted">{ar ? 'المدة:' : 'Period:'}</span> <b className="text-base-primary">{ar ? durationLabels[viewing.rental_period].ar : durationLabels[viewing.rental_period].en}</b></div>
               <div className="flex items-center gap-2"><MapPin size={15} className="text-yellow-accent" /><span className="text-base-muted">{ar ? 'الموقع:' : 'Location:'}</span> <b className="text-base-primary">{[viewing.project_city, viewing.project_location].filter(Boolean).join(' — ') || '—'}</b></div>
+              <div className="flex items-center gap-2"><Hash size={15} className="text-yellow-accent" /><span className="text-base-muted">{ar ? 'عدد المعدات:' : 'Machines:'}</span> <b className="text-base-primary">{viewing.quantity ?? 1}</b></div>
               <div className="flex items-center gap-2"><Truck size={15} className="text-yellow-accent" /><span className="text-base-muted">{ar ? 'نقل المعدة:' : 'Transport:'}</span> <b className="text-base-primary">{party(viewing.transport_by)}</b></div>
               <div className="flex items-center gap-2"><Fuel size={15} className="text-yellow-accent" /><span className="text-base-muted">{ar ? 'الديزل:' : 'Diesel:'}</span> <b className="text-base-primary">{party(viewing.fuel_by)}</b></div>
             </div>
@@ -86,7 +87,7 @@ export default function MyRentalRequests() {
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="text-xs font-mono font-bold text-yellow-accent mb-1">{r.request_reference}</div>
-                  <div className="font-bold text-base-primary truncate">{ar ? r.equipment_name_ar : r.equipment_name}</div>
+                  <div className="font-bold text-base-primary truncate">{ar ? r.equipment_name_ar : r.equipment_name}{(r.quantity ?? 1) > 1 && <span className="text-yellow-accent"> × {r.quantity}</span>}</div>
                   <div className="text-xs text-base-muted mt-1">{fmt(r.created_at)}</div>
                 </div>
                 <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${statusColors[r.status]}`}>{ar ? statusLabels[r.status].ar : statusLabels[r.status].en}</span>

@@ -73,7 +73,7 @@ export default function RequestsCenter() {
       companyName: r.company_name,
       phone: r.phone,
       email: r.email,
-      serviceOrEquipment: ar ? r.equipment_name_ar : r.equipment_name,
+      serviceOrEquipment: `${ar ? r.equipment_name_ar : r.equipment_name}${(r.quantity ?? 1) > 1 ? ` × ${r.quantity}` : ''}`,
       status: r.status,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
@@ -239,6 +239,7 @@ export default function RequestsCenter() {
         <Section title={ar ? 'الإيجار' : 'Rental'} icon={Calendar}>
           <Field label={ar ? 'مدة الإيجار' : 'Rental Period'} value={ar ? durationLabels[r.rental_period].ar : durationLabels[r.rental_period].en} />
           <Field label={ar ? 'تاريخ البدء' : 'Start Date'} value={r.requested_start_date || '—'} />
+          <Field label={ar ? 'عدد المعدات' : 'Machines'} value={String(r.quantity ?? 1)} />
           <Field label={ar ? 'نقل المعدة' : 'Transport'} value={r.transport_by ? (ar ? responsiblePartyLabels[r.transport_by].ar : responsiblePartyLabels[r.transport_by].en) : '—'} />
           <Field label={ar ? 'الديزل' : 'Diesel'} value={r.fuel_by ? (ar ? responsiblePartyLabels[r.fuel_by].ar : responsiblePartyLabels[r.fuel_by].en) : '—'} />
           <Field label={ar ? 'الموقع' : 'Project Location'} value={[r.project_city, r.project_location].filter(Boolean).join(' — ') || '—'} />
