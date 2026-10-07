@@ -224,6 +224,7 @@ export default function ServiceRequestPage({ requestType }: Props) {
       preferredVisitDate: form.preferredVisitDate,
       notes: form.notes,
     });
+    if (result.deferred) return;
     if (result.success && result.record) {
       const requestId = result.record.id;
       if (form.attachments.length > 0 && requestId) {

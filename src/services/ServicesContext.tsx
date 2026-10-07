@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { supabase } from '@/lib/supabase';
 import { submitPublicRequest } from '@/lib/publicRequests';
+import { requireCustomer } from '@/components/CustomerGate';
 import type { ProjectRequestRecord, ProjectRequestDraft, ProjectRequestStatus } from './types';
 
 interface ServiceRequestData {
@@ -30,8 +31,8 @@ interface ServiceRequestData {
 interface ServicesContextValue {
   submitting: boolean;
   submitError: string | null;
-  submitServiceRequest: (data: ServiceRequestData) => Promise<{ success: boolean; record?: ProjectRequestRecord; error?: string }>;
-  submitRequest: (draft: ProjectRequestDraft, termsAccepted: boolean) => Promise<{ success: boolean; record?: ProjectRequestRecord; error?: string }>;
+  submitServiceRequest: (data: ServiceRequestData) => Promise<{ success: boolean; record?: ProjectRequestRecord; error?: string; deferred?: boolean }>;
+  submitRequest: (draft: ProjectRequestDraft, termsAccepted: boolean) => Promise<{ success: boolean; record?: ProjectRequestRecord; error?: string; deferred?: boolean }>;
   requests: ProjectRequestRecord[];
   loadingRequests: boolean;
   fetchRequests: () => Promise<void>;
@@ -74,7 +75,9 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
         terms_accepted: data.termsAccepted,
       };
 
-      const result = await submitPublicRequest('project_requests', insertData);
+      const accountEmail = await requireCustomer({ table: 'project_requests', row: insertData, label: String(insertData.service_type || insertData.service_category || '') });
+      if (!accountEmail) return { success: false, deferred: true };
+      const result = await submitPublicRequest('project_requests', { ...insertData, email: accountEmail });
       return { success: true, record: result as unknown as ProjectRequestRecord };
     } catch (err) {
       console.error('Service request submission failed', err);
@@ -107,7 +110,9 @@ export function ServicesProvider({ children }: { children: ReactNode }) {
         terms_accepted: termsAccepted,
       };
 
-      const data = await submitPublicRequest('project_requests', insertData);
+      const accountEmail = await requireCustomer({ table: 'project_requests', row: insertData, label: String(insertData.service_type || insertData.service_category || '') });
+      if (!accountEmail) return { success: false, deferred: true };
+      const data = await submitPublicRequest('project_requests', { ...insertData, email: accountEmail });
       return { success: true, record: data as unknown as ProjectRequestRecord };
     } catch (err) {
       console.error('Service request submission failed', err);

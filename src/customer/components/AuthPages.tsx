@@ -5,13 +5,14 @@ import { useCustomer } from '../CustomerContext';
 import { supabase } from '@/lib/supabase';
 import type { AuthView } from '../types';
 
-export default function AuthPages({ initialView = 'login' }: { initialView?: AuthView }) {
+export default function AuthPages({ initialView = 'login', pendingLabel }: { initialView?: AuthView; pendingLabel?: string }) {
   const { lang, dir } = useApp();
   const { login, register } = useCustomer();
   const [view, setView] = useState<AuthView>(initialView);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmSentTo, setConfirmSentTo] = useState<string | null>(null);
 
   // Login state
   const [loginEmail, setLoginEmail] = useState('');
@@ -34,7 +35,7 @@ export default function AuthPages({ initialView = 'login' }: { initialView?: Aut
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    const err = await login(loginEmail, password);
+    const err = await login(loginEmail, loginPassword);
     if (err) setError(err);
   };
 
@@ -50,7 +51,12 @@ export default function AuthPages({ initialView = 'login' }: { initialView?: Aut
       return;
     }
     const err = await register({ fullName, mobile, email, password });
-    if (err) setError(err);
+    if (err === 'CONFIRM_EMAIL') {
+      setConfirmSentTo(email);
+      setView('login');
+    } else if (err) {
+      setError(err);
+    }
   };
 
   const [forgotLoading, setForgotLoading] = useState(false);
@@ -100,6 +106,19 @@ export default function AuthPages({ initialView = 'login' }: { initialView?: Aut
 
         <div className="card-industrial p-6 lg:p-8 animate-scale-in">
           {/* LOGIN */}
+          {pendingLabel && view !== 'forgot' && (
+            <div className="mb-5 p-3 rounded-lg border border-yellow-accent/30 bg-yellow-accent/5 text-sm text-base-primary">
+              {lang === 'ar' ? 'لديك طلب محفوظ سيُرسل بعد تسجيل الدخول: ' : 'You have a saved request that will be sent after you sign in: '}
+              <span className="font-bold text-yellow-accent">{pendingLabel}</span>
+            </div>
+          )}
+          {confirmSentTo && (
+            <div className="mb-5 p-3 rounded-lg border border-green-500/30 bg-green-500/10 text-sm text-base-primary leading-relaxed">
+              {lang === 'ar'
+                ? <>تم إنشاء حسابك. أرسلنا رابط التفعيل إلى <span dir="ltr" className="font-semibold">{confirmSentTo}</span> — افتحه ثم سجّل الدخول.</>
+                : <>Account created. We sent a confirmation link to <span className="font-semibold">{confirmSentTo}</span> — open it, then sign in.</>}
+            </div>
+          )}
           {view === 'login' && (
             <>
               <h1 className="text-2xl font-black text-base-primary mb-1">{lang === 'ar' ? 'تسجيل الدخول' : 'Login'}</h1>

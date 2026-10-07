@@ -2,17 +2,21 @@ import { createContext, useContext, useState, useEffect, useCallback, type React
 import { supabase } from '@/lib/supabase';
 import type { CustomerUser, CompanyProfile, CustomerView } from './types';
 import { emptyCompanyProfile } from './types';
+import { loadCompanyProfile, saveCompanyProfile } from '@/lib/customerProfile';
 
 interface CustomerContextValue {
   user: CustomerUser | null;
   isAuthenticated: boolean;
   authLoading: boolean;
   login: (email: string, password: string) => Promise<string | null>;
+  /** Resolves to an error message, 'CONFIRM_EMAIL' when the account must be confirmed from the inbox, or null when signed in. */
   register: (data: { fullName: string; mobile: string; email: string; password: string }) => Promise<string | null>;
   logout: () => Promise<void>;
   updateUser: (u: Partial<CustomerUser>) => void;
   company: CompanyProfile;
-  updateCompany: (c: CompanyProfile) => void;
+  /** null while loading; false when the customer has not created a company profile yet. */
+  hasCompany: boolean | null;
+  updateCompany: (c: CompanyProfile) => Promise<void>;
   view: CustomerView;
   setView: (v: CustomerView) => void;
 }
@@ -23,6 +27,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<CustomerUser | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [company, setCompany] = useState<CompanyProfile>(emptyCompanyProfile());
+  const [hasCompany, setHasCompany] = useState<boolean | null>(null);
   const [view, setView] = useState<CustomerView>('overview');
 
   // Restore session on mount
@@ -76,6 +81,27 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     return () => { mounted = false; subscription.unsubscribe(); };
   }, []);
 
+  // Load the saved company profile whenever the signed-in customer changes.
+  useEffect(() => {
+    if (!user) {
+      setHasCompany(null);
+      return;
+    }
+    let cancelled = false;
+    setHasCompany(null);
+    loadCompanyProfile(user.id)
+      .then((p) => {
+        if (cancelled) return;
+        if (p) setCompany(p);
+        else setCompany((prev) => ({ ...prev, contactPerson: prev.contactPerson || user.fullName, companyPhone: prev.companyPhone || user.mobile, officialEmail: prev.officialEmail || user.email }));
+        setHasCompany(!!p);
+      })
+      .catch(() => !cancelled && setHasCompany(false));
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const login = useCallback(async (email: string, password: string): Promise<string | null> => {
     if (!email.trim()) return 'البريد الإلكتروني مطلوب / Email is required';
     if (!password) return 'كلمة المرور مطلوبة / Password is required';
@@ -94,11 +120,12 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     if (!data.email.includes('@')) return 'بريد إلكتروني غير صالح / Invalid email';
     if (data.password.length < 6) return 'كلمة المرور يجب أن تكون 6 أحرف على الأقل / Password must be at least 6 characters';
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
         data: { full_name: data.fullName, mobile: data.mobile },
+        emailRedirectTo: `${window.location.origin}/#/account`,
       },
     });
     if (error) {
@@ -106,7 +133,7 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
       console.error('Registration failed', error);
       return 'تعذر إنشاء الحساب. تحقق من البيانات أو حاول لاحقاً / Could not create the account. Please check your details or try again later';
     }
-    return null;
+    return signUpData.session ? null : 'CONFIRM_EMAIL';
   }, []);
 
   const logout = useCallback(async () => {
@@ -119,14 +146,19 @@ export function CustomerProvider({ children }: { children: ReactNode }) {
     setUser((prev) => (prev ? { ...prev, ...u } : prev));
   }, []);
 
-  const updateCompany = useCallback((c: CompanyProfile) => setCompany(c), []);
+  const updateCompany = useCallback(async (c: CompanyProfile) => {
+    if (!user) return;
+    await saveCompanyProfile(user.id, c);
+    setCompany(c);
+    setHasCompany(true);
+  }, [user]);
 
   return (
     <CustomerContext.Provider
       value={{
         user, isAuthenticated: !!user, authLoading,
         login, register, logout, updateUser,
-        company, updateCompany, view, setView,
+        company, hasCompany, updateCompany, view, setView,
       }}
     >
       {children}

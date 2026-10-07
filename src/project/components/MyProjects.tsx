@@ -1,145 +1,94 @@
-import { useState } from 'react';
-import { HardHat, Eye, X, MapPin, Calendar, Clock, FileText, Building2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { HardHat, Plus, ArrowRight, ArrowLeft, MapPin, FileText } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCustomer } from '@/customer/CustomerContext';
 import { useProject } from '@/project/ProjectContext';
-import { statusLabels, statusColors, serviceTypeLabels, projectTypeLabels } from '@/project/types';
-import type { ProjectRequest } from '@/project/types';
+import { dbStatusLabels, dbStatusColors, serviceCategoryLabels } from '@/project/types';
+import type { ProjectRequestRow } from '@/project/types';
+import RequestTracker, { RequestProgressBar } from '@/customer/components/RequestTracker';
 
+/** The signed-in customer's project / service requests (from the database) with order progress. */
 export default function MyProjects() {
-  const { lang } = useApp();
-  const { user } = useCustomer();
-  const { projectRequestsByCustomer } = useProject();
-  const [viewing, setViewing] = useState<ProjectRequest | null>(null);
-
+  const { lang, dir } = useApp();
   const ar = lang === 'ar';
-  const myProjects = projectRequestsByCustomer(user?.id || '');
+  const { user } = useCustomer();
+  const { dbRequests, dbReload } = useProject();
+  const [viewing, setViewing] = useState<ProjectRequestRow | null>(null);
+
+  useEffect(() => {
+    dbReload();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const email = user?.email.toLowerCase().trim();
+  const mine = dbRequests.filter((r) => r.email && r.email.toLowerCase() === email);
+  const fmt = (d: string) => new Date(d).toLocaleDateString(ar ? 'ar-SA' : 'en-GB', { year: 'numeric', month: 'short', day: 'numeric' });
+  const statusLabel = (s: ProjectRequestRow['status']) => (dbStatusLabels[s] ? (ar ? dbStatusLabels[s].ar : dbStatusLabels[s].en) : s);
+  const category = (c: string) => (serviceCategoryLabels[c] ? (ar ? serviceCategoryLabels[c].ar : serviceCategoryLabels[c].en) : c);
+
+  if (viewing) {
+    return (
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-xs font-mono text-yellow-accent">{viewing.request_reference}</div>
+            <h1 className="text-xl lg:text-2xl font-black text-base-primary">{category(viewing.service_category)} — {viewing.service_type}</h1>
+          </div>
+          <button onClick={() => setViewing(null)} className="btn-secondary text-sm">
+            {dir === 'rtl' ? <ArrowRight size={16} /> : <ArrowLeft size={16} />}
+            {ar ? 'العودة' : 'Back'}
+          </button>
+        </div>
+        <div className="grid lg:grid-cols-[1fr_20rem] gap-6 items-start">
+          <div className="card-industrial p-5 space-y-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${dbStatusColors[viewing.status] || 'bg-base text-base-muted'}`}>{statusLabel(viewing.status)}</span>
+              <span className="text-base-muted text-xs">{fmt(viewing.created_at)}</span>
+            </div>
+            <div className="flex items-center gap-2"><MapPin size={15} className="text-yellow-accent" /><b className="text-base-primary">{[viewing.city, viewing.district].filter(Boolean).join(' — ')}</b></div>
+            <div className="flex items-start gap-2"><FileText size={15} className="text-yellow-accent mt-0.5" /><p className="text-base-primary leading-relaxed">{viewing.project_description}</p></div>
+          </div>
+          <RequestTracker req={{ id: viewing.id, kind: 'project', status: viewing.status }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl lg:text-3xl font-black text-base-primary mb-1 flex items-center gap-2">
-          <HardHat size={28} className="text-yellow-accent" />
-          {ar ? 'طلبات المشاريع' : 'My Project Requests'}
-        </h1>
-        <p className="text-base-muted text-sm">{ar ? `${myProjects.length} طلب` : `${myProjects.length} requests`}</p>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl lg:text-3xl font-black text-base-primary mb-1 flex items-center gap-2">
+            <HardHat size={28} className="text-yellow-accent" />
+            {ar ? 'طلبات المشاريع' : 'My Project Requests'}
+          </h1>
+          <p className="text-base-muted text-sm">{ar ? `${mine.length} طلب` : `${mine.length} requests`}</p>
+        </div>
+        <a href="#/services/contracting" className="btn-primary text-sm">
+          <Plus size={16} />
+          {ar ? 'طلب مشروع جديد' : 'New project request'}
+        </a>
       </div>
 
-      {myProjects.length === 0 ? (
+      {mine.length === 0 ? (
         <div className="card-industrial p-12 text-center">
           <HardHat size={32} className="mx-auto mb-3 text-base-muted opacity-30" />
-          <p className="text-sm text-base-muted">{ar ? 'لا توجد طلبات مشاريع' : 'No project requests'}</p>
+          <p className="text-sm text-base-muted">{ar ? 'لا توجد طلبات مشاريع بعد' : 'No project requests yet'}</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {myProjects.map((p) => (
+          {mine.map((p) => (
             <button key={p.id} onClick={() => setViewing(p)} className="card-industrial p-5 w-full text-start hover-lift">
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-mono font-bold text-base-muted">{p.requestNumber}</span>
-                    <span className="text-xs text-base-muted">• {p.createdAt}</span>
-                  </div>
-                  <div className="text-sm font-bold text-base-primary">{p.projectName}</div>
-                  <div className="text-xs text-base-muted">
-                    {ar ? serviceTypeLabels[p.serviceType].ar : serviceTypeLabels[p.serviceType].en} • {p.region}, {p.city}
-                  </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-mono font-bold text-yellow-accent mb-1">{p.request_reference}</div>
+                  <div className="font-bold text-base-primary truncate">{category(p.service_category)} — {p.service_type}</div>
+                  <div className="text-xs text-base-muted mt-1">{p.city} · {fmt(p.created_at)}</div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${statusColors[p.status]}`}>
-                    {ar ? statusLabels[p.status].ar : statusLabels[p.status].en}
-                  </span>
-                  <Eye size={16} className="text-base-muted" />
-                </div>
+                <span className={`px-2.5 py-1 rounded-md text-xs font-semibold ${dbStatusColors[p.status] || 'bg-base text-base-muted'}`}>{statusLabel(p.status)}</span>
               </div>
+              <RequestProgressBar req={{ id: p.id, kind: 'project', status: p.status }} />
             </button>
           ))}
-        </div>
-      )}
-
-      {/* Detail modal */}
-      {viewing && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setViewing(null)}>
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-          <div className="relative w-full max-w-2xl bg-elevated rounded-2xl border border-base shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="sticky top-0 bg-elevated border-b border-base p-5 flex items-center justify-between z-10">
-              <div>
-                <h3 className="text-lg font-bold text-base-primary">{viewing.projectName}</h3>
-                <p className="text-xs text-base-muted">{viewing.requestNumber} • {viewing.createdAt}</p>
-              </div>
-              <button onClick={() => setViewing(null)} className="p-2 rounded-lg border border-base text-base-muted hover:text-yellow-accent">
-                <X size={18} />
-              </button>
-            </div>
-
-            <div className="p-5 space-y-4">
-              {/* Status */}
-              <span className={`px-3 py-1.5 rounded-md text-sm font-semibold ${statusColors[viewing.status]}`}>
-                {ar ? statusLabels[viewing.status].ar : statusLabels[viewing.status].en}
-              </span>
-
-              {/* Project info */}
-              <div>
-                <h4 className="text-xs font-bold text-yellow-accent uppercase mb-2 flex items-center gap-1"><HardHat size={14} /> {ar ? 'بيانات المشروع' : 'Project'}</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-base-muted">{ar ? 'الاسم' : 'Name'}: </span><span className="font-semibold text-base-primary">{viewing.projectName}</span></div>
-                  <div><span className="text-base-muted">{ar ? 'الخدمة' : 'Service'}: </span><span className="font-semibold text-base-primary">{ar ? serviceTypeLabels[viewing.serviceType].ar : serviceTypeLabels[viewing.serviceType].en}</span></div>
-                  <div><span className="text-base-muted">{ar ? 'النوع' : 'Type'}: </span><span className="font-semibold text-base-primary">{ar ? projectTypeLabels[viewing.projectType].ar : projectTypeLabels[viewing.projectType].en}</span></div>
-                  {viewing.estimatedBudget && <div><span className="text-base-muted">{ar ? 'الميزانية' : 'Budget'}: </span><span className="font-semibold text-base-primary">{viewing.estimatedBudget}</span></div>}
-                </div>
-                {viewing.projectScope && <div className="mt-2 text-sm"><span className="text-base-muted">{ar ? 'النطاق' : 'Scope'}: </span><span className="text-base-primary"> {viewing.projectScope}</span></div>}
-                {viewing.description && <div className="mt-1 text-sm"><span className="text-base-muted">{ar ? 'الوصف' : 'Description'}: </span><span className="text-base-primary"> {viewing.description}</span></div>}
-                {viewing.requirements && <div className="mt-1 text-sm"><span className="text-base-muted">{ar ? 'المتطلبات' : 'Requirements'}: </span><span className="text-base-primary"> {viewing.requirements}</span></div>}
-                {viewing.additionalNotes && <div className="mt-1 text-sm"><span className="text-base-muted">{ar ? 'ملاحظات' : 'Notes'}: </span><span className="text-base-primary"> {viewing.additionalNotes}</span></div>}
-              </div>
-
-              {/* Location */}
-              <div>
-                <h4 className="text-xs font-bold text-yellow-accent uppercase mb-2 flex items-center gap-1"><MapPin size={14} /> {ar ? 'الموقع' : 'Location'}</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-base-muted">{ar ? 'المنطقة' : 'Region'}: </span><span className="font-semibold text-base-primary">{viewing.region}</span></div>
-                  <div><span className="text-base-muted">{ar ? 'المدينة' : 'City'}: </span><span className="font-semibold text-base-primary">{viewing.city}</span></div>
-                  <div className="col-span-2"><span className="text-base-muted">{ar ? 'الموقع التفصيلي' : 'Location'}: </span><span className="font-semibold text-base-primary">{viewing.projectLocation || '—'}</span></div>
-                </div>
-              </div>
-
-              {/* Timeline */}
-              <div>
-                <h4 className="text-xs font-bold text-yellow-accent uppercase mb-2 flex items-center gap-1"><Calendar size={14} /> {ar ? 'الجدول الزمني' : 'Timeline'}</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-base-muted">{ar ? 'تاريخ البدء' : 'Start Date'}: </span><span className="font-semibold text-base-primary">{viewing.expectedStartDate || '—'}</span></div>
-                  <div><span className="text-base-muted">{ar ? 'المدة' : 'Duration'}: </span><span className="font-semibold text-base-primary">{viewing.expectedDuration || '—'}</span></div>
-                </div>
-              </div>
-
-              {/* Attachments */}
-              {viewing.attachments.length > 0 && (
-                <div>
-                  <h4 className="text-xs font-bold text-yellow-accent uppercase mb-2 flex items-center gap-1"><FileText size={14} /> {ar ? 'المرفقات' : 'Attachments'}</h4>
-                  <div className="space-y-1">
-                    {viewing.attachments.map((att) => (
-                      <div key={att.id} className="text-sm flex items-center gap-2 p-2 rounded-lg bg-base border border-base">
-                        <FileText size={12} className="text-yellow-accent" />
-                        <span className="text-base-primary">{att.fileName}</span>
-                        <span className="text-base-muted text-xs">({att.fileSize})</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Company */}
-              <div>
-                <h4 className="text-xs font-bold text-yellow-accent uppercase mb-2 flex items-center gap-1"><Building2 size={14} /> {ar ? 'بيانات الشركة' : 'Company'}</h4>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><span className="text-base-muted">{ar ? 'الشركة' : 'Company'}: </span><span className="font-semibold text-base-primary">{viewing.company.companyName || '—'}</span></div>
-                  <div><span className="text-base-muted">{ar ? 'س.ت' : 'CR'}: </span><span className="font-semibold text-base-primary">{viewing.company.commercialRegistration || '—'}</span></div>
-                  <div><span className="text-base-muted">{ar ? 'المسؤول' : 'Contact'}: </span><span className="font-semibold text-base-primary">{viewing.company.contactPerson || '—'}</span></div>
-                  <div><span className="text-base-muted">{ar ? 'الجوال' : 'Mobile'}: </span><span className="font-semibold text-base-primary">{viewing.company.companyPhone || '—'}</span></div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
