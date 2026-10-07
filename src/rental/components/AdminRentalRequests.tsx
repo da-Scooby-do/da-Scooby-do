@@ -70,7 +70,7 @@ export default function AdminRentalRequests() {
     }
   };
 
-  const equipmentName = (r: RentalRequestRow) => ar ? r.equipment_name_ar : r.equipment_name;
+  const equipmentName = (r: RentalRequestRow) => `${ar ? r.equipment_name_ar : r.equipment_name}${(r.quantity ?? 1) > 1 ? ` × ${r.quantity}` : ''}`;
 
   return (
     <div className="space-y-6">
@@ -194,6 +194,7 @@ export default function AdminRentalRequests() {
                   <div><span className="text-base-muted">{ar ? 'تاريخ البدء' : 'Start Date'}: </span><span className="font-semibold text-base-primary">{viewing.requested_start_date || '—'}</span></div>
                   <div><span className="text-base-muted">{ar ? 'المدينة' : 'City'}: </span><span className="font-semibold text-base-primary">{viewing.project_city || '—'}</span></div>
                   <div><span className="text-base-muted">{ar ? 'الموقع' : 'Location'}: </span><span className="font-semibold text-base-primary">{viewing.project_location || '—'}</span></div>
+                  <div><span className="text-base-muted">{ar ? 'عدد المعدات' : 'Machines'}: </span><span className="font-semibold text-yellow-accent">{viewing.quantity ?? 1}</span></div>
                   <div><span className="text-base-muted">{ar ? 'نقل المعدة' : 'Transport'}: </span><span className="font-semibold text-yellow-accent">{viewing.transport_by ? (ar ? responsiblePartyLabels[viewing.transport_by].ar : responsiblePartyLabels[viewing.transport_by].en) : '—'}</span></div>
                   <div><span className="text-base-muted">{ar ? 'الديزل' : 'Diesel'}: </span><span className="font-semibold text-yellow-accent">{viewing.fuel_by ? (ar ? responsiblePartyLabels[viewing.fuel_by].ar : responsiblePartyLabels[viewing.fuel_by].en) : '—'}</span></div>
                 </div>

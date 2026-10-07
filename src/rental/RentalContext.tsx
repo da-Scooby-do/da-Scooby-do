@@ -22,6 +22,7 @@ interface SubmitRentalRequestData {
   notes?: string;
   transport_by: ResponsibleParty;
   fuel_by: ResponsibleParty;
+  quantity: number;
   terms_accepted: boolean;
 }
 
@@ -92,6 +93,7 @@ export function RentalProvider({ children }: { children: ReactNode }) {
       notes: data.notes || null,
       transport_by: data.transport_by,
       fuel_by: data.fuel_by,
+      quantity: data.quantity,
       terms_accepted: data.terms_accepted,
       status: 'new' as RentalRequestStatus,
     };

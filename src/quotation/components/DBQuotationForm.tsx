@@ -67,7 +67,7 @@ export default function DBQuotationForm({ requestType, request, existing, onClos
         const r = request as RentalRequestRow;
         setItems([{
           description: ar ? r.equipment_name_ar : r.equipment_name,
-          quantity: 1,
+          quantity: r.quantity ?? 1,
           unit: ar ? 'وحدة' : 'unit',
           unit_price: 0,
           discount: 0,

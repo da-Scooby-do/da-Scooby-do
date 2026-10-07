@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Check, Send, FileText, AlertCircle, Loader2, Truck, Fuel } from 'lucide-react';
+import { X, Check, Send, FileText, AlertCircle, Loader2, Truck, Fuel, Minus, Plus } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCatalog } from '../CatalogContext';
 import { getCategoryById, getBrandById, getModelById } from '../catalogApi';
@@ -9,12 +9,17 @@ import TermsConsent from '@/components/TermsConsent';
 import type { RentalDuration, ResponsibleParty } from '@/rental/types';
 import { responsiblePartyLabels } from '@/rental/types';
 
+const MIN_QTY = 1;
+const MAX_QTY = 100;
+const clampQty = (n: number) => (Number.isFinite(n) ? Math.min(MAX_QTY, Math.max(MIN_QTY, n)) : MIN_QTY);
+
 export default function RentalRequestModal() {
   const { lang, dir } = useApp();
   const { showRequestModal, setShowRequestModal, requestItem, categories, brands, models } = useCatalog();
   const { submitRequest } = useRental();
 
   const [selectedPeriod, setSelectedPeriod] = useState<RentalDuration>('daily');
+  const [quantity, setQuantity] = useState(1);
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -50,6 +55,7 @@ export default function RentalRequestModal() {
     setShowRequestModal(false);
     setSubmitted(false);
     setSelectedPeriod('daily');
+    setQuantity(1);
     setReference('');
     setSubmitting(false);
     setSubmitError(null);
@@ -105,6 +111,7 @@ export default function RentalRequestModal() {
         notes: notes || undefined,
         transport_by: transportBy,
         fuel_by: fuelBy,
+        quantity,
         terms_accepted: agreed,
       });
 
@@ -180,16 +187,11 @@ export default function RentalRequestModal() {
             </div>
             <div className="max-w-md mx-auto mb-6 p-4 rounded-lg bg-yellow-accent/5 border border-yellow-accent/20">
               <p className="text-sm text-base-primary font-semibold mb-2">
-                {ar ? 'أنشئ حساباً لتتبع طلباتك وعروضك وعقودك في مكان واحد.' : 'Create an account to track your requests, quotations, and contracts in one place.'}
+                {ar ? 'تابع مراحل طلبك وعروض الأسعار والعقود من حسابك.' : 'Follow your request, quotations, and contracts from your account.'}
               </p>
-              <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                <a href="#/account" className="btn-primary text-sm justify-center">
-                  {ar ? 'إنشاء حساب' : 'Create Account'}
-                </a>
-                <a href="#/account" className="btn-secondary text-sm justify-center">
-                  {ar ? 'لدي حساب بالفعل' : 'I Already Have an Account'}
-                </a>
-              </div>
+              <a href="#/account" className="btn-secondary text-sm justify-center">
+                {ar ? 'تتبع الطلب' : 'Track request'}
+              </a>
             </div>
             <div>
               <button onClick={handleClose} className="btn-primary">
@@ -226,6 +228,48 @@ export default function RentalRequestModal() {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Number of machines */}
+              <div>
+                <label htmlFor="rental-quantity" className="block text-sm font-semibold text-base-primary mb-2">
+                  {ar ? 'عدد المعدات المطلوبة' : 'Number of machines'} <span className="text-yellow-accent">*</span>
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="inline-flex items-center rounded-lg border-2 border-base overflow-hidden">
+                    <button
+                      type="button"
+                      aria-label={ar ? 'إنقاص' : 'Decrease'}
+                      onClick={() => setQuantity((q) => Math.max(MIN_QTY, q - 1))}
+                      disabled={quantity <= MIN_QTY}
+                      className="w-11 h-11 flex items-center justify-center text-base-muted hover:text-yellow-accent hover:bg-yellow-accent/10 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      id="rental-quantity"
+                      type="number"
+                      inputMode="numeric"
+                      min={MIN_QTY}
+                      max={MAX_QTY}
+                      value={quantity}
+                      onChange={(e) => setQuantity(clampQty(parseInt(e.target.value, 10)))}
+                      className="w-16 h-11 text-center bg-transparent text-lg font-black text-yellow-accent focus:outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      aria-label={ar ? 'زيادة' : 'Increase'}
+                      onClick={() => setQuantity((q) => Math.min(MAX_QTY, q + 1))}
+                      disabled={quantity >= MAX_QTY}
+                      className="w-11 h-11 flex items-center justify-center text-base-muted hover:text-yellow-accent hover:bg-yellow-accent/10 disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  <span className="text-sm text-base-muted">
+                    {ar ? (quantity === 1 ? 'معدة واحدة' : quantity === 2 ? 'معدتان' : `${quantity} معدات`) : `${quantity} ${quantity === 1 ? 'machine' : 'machines'}`}
+                  </span>
+                </div>
+              </div>
+
               {/* Rental period */}
               <div>
                 <label className="block text-sm font-semibold text-base-primary mb-2">
