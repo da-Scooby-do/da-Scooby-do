@@ -21,6 +21,10 @@ export interface PurchaseOrderRow {
   created_by_name: string | null;
   created_at: string;
   updated_at: string;
+  customer_email?: string | null;
+  /** The customer's own PO number (po_number is SAHAB's reference). */
+  customer_po_number?: string | null;
+  submitted_by_customer?: boolean;
 }
 
 export interface POHistoryRow {

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FileText, Check, X, Eye, Clock, Printer, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Check, X, Eye, Clock, Printer, Loader2, AlertCircle, Upload, ClipboardCheck } from 'lucide-react';
 import { useApp } from '@/contexts/AppContext';
 import { useCustomer } from '../CustomerContext';
 import { supabase } from '@/lib/supabase';
@@ -10,6 +10,9 @@ import {
 import type { QuotationRow, QuotationItemDB, QuotationDBStatus } from '@/quotation/types';
 import DBPrintableQuotation from '@/quotation/components/DBPrintableQuotation';
 import type { QuotationWithItems } from '@/quotation/types';
+import { poStatusLabels, poStatusColors } from '@/purchase-orders/types';
+import type { PurchaseOrderRow } from '@/purchase-orders/types';
+import PoUploadModal from './PoUploadModal';
 
 export default function QuotationsPage() {
   const { lang } = useApp();
@@ -24,6 +27,9 @@ export default function QuotationsPage() {
   const [printing, setPrinting] = useState<QuotationWithItems | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pos, setPos] = useState<PurchaseOrderRow[]>([]);
+  const [uploadingFor, setUploadingFor] = useState<QuotationRow | null>(null);
+  const [poNotice, setPoNotice] = useState<string | null>(null);
 
   const loadQuotations = useCallback(async () => {
     if (!user?.email) { setLoading(false); return; }
@@ -36,6 +42,11 @@ export default function QuotationsPage() {
         .order('created_at', { ascending: false });
       if (queryError) throw queryError;
       setQuotations((data as QuotationRow[] | null) || []);
+      const { data: poData } = await supabase
+        .from('purchase_orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setPos((poData as PurchaseOrderRow[] | null) || []);
     } catch (err) {
       console.error('Failed to load quotations', err);
       setError('تعذر تحميل عروض الأسعار / Could not load your quotations');
@@ -96,6 +107,38 @@ export default function QuotationsPage() {
     if (full) setPrinting(full);
   };
 
+  /** The customer's latest PO for a quotation that is still in play (not rejected). */
+  const activePo = (q: QuotationRow) => pos.find((p) => p.quotation_id === q.id && p.status !== 'rejected');
+  const rejectedPo = (q: QuotationRow) => pos.find((p) => p.quotation_id === q.id && p.status === 'rejected');
+
+  const renderPoBlock = (q: QuotationRow) => {
+    if (q.status !== 'accepted') return null;
+    const po = activePo(q);
+    if (po) {
+      return (
+        <div className="p-3 rounded-lg bg-base border border-base text-sm mb-3 flex flex-wrap items-center gap-2">
+          <ClipboardCheck size={15} className="text-yellow-accent" />
+          <span className="text-base-muted">{ar ? 'أمر الشراء' : 'Purchase order'}:</span>
+          <b className="text-base-primary" dir="ltr">{po.customer_po_number || po.po_number}</b>
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${poStatusColors[po.status]}`}>{ar ? poStatusLabels[po.status].ar : poStatusLabels[po.status].en}</span>
+          {po.status !== 'accepted' && <span className="text-xs text-base-muted">{ar ? '— قيد مراجعة سحاب' : '— SAHAB is reviewing it'}</span>}
+        </div>
+      );
+    }
+    return (
+      <div className="p-3 rounded-lg bg-yellow-accent/5 border border-yellow-accent/30 text-sm mb-3 flex flex-wrap items-center justify-between gap-2">
+        <span className="text-base-primary">
+          {rejectedPo(q)
+            ? (ar ? 'تم رفض أمر الشراء السابق، يرجى رفع أمر شراء جديد.' : 'Your previous PO was rejected. Please upload a new one.')
+            : (ar ? 'الخطوة التالية: ارفع أمر الشراء (PO) لهذا العرض.' : 'Next step: upload the purchase order (PO) for this quotation.')}
+        </span>
+        <button onClick={() => setUploadingFor(q)} className="btn-primary text-xs px-3 py-2 flex items-center gap-1.5">
+          <Upload size={14} /> {ar ? 'رفع أمر الشراء' : 'Upload PO'}
+        </button>
+      </div>
+    );
+  };
+
   const fmtDate = (d: string | null) => {
     if (!d) return '—';
     try { return new Date(d).toLocaleDateString(ar ? 'ar-SA' : 'en-US', { year: 'numeric', month: 'short', day: 'numeric' }); }
@@ -107,6 +150,11 @@ export default function QuotationsPage() {
 
   return (
     <div className="space-y-6">
+      {poNotice && (
+        <div role="status" className="p-3 rounded-lg bg-green-500/10 border border-green-500/30 flex items-center gap-2 text-sm text-green-500">
+          <Check size={16} /> {poNotice}
+        </div>
+      )}
       <div>
         <h1 className="text-2xl lg:text-3xl font-black text-base-primary mb-1 flex items-center gap-2">
           <FileText size={28} className="text-yellow-accent" />
@@ -171,6 +219,8 @@ export default function QuotationsPage() {
                   {ar ? `تم القبول` : `Accepted`}
                 </div>
               )}
+
+              {renderPoBlock(q)}
 
               <div className="flex flex-wrap gap-2">
                 <button onClick={() => handleView(q)} className="btn-secondary text-xs px-3 py-2 flex items-center gap-1.5">
@@ -320,9 +370,24 @@ export default function QuotationsPage() {
                   {ar ? 'تم قبول هذا العرض — جاهز لمرحلة التعاقد' : 'This quotation was accepted — ready for contract stage'}
                 </div>
               )}
+              {renderPoBlock(viewing)}
             </div>
           </div>
         </div>
+      )}
+
+      {uploadingFor && user && (
+        <PoUploadModal
+          quotation={uploadingFor}
+          userId={user.id}
+          onClose={() => setUploadingFor(null)}
+          onDone={() => {
+            setUploadingFor(null);
+            setViewing(null);
+            setPoNotice(ar ? 'تم رفع أمر الشراء. سيراجعه فريق سحاب ويُصدر عقد التأجير للتوقيع.' : 'PO uploaded. SAHAB will review it and issue the rental contract for signing.');
+            loadQuotations();
+          }}
+        />
       )}
 
       {/* Print view */}

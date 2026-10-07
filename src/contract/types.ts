@@ -225,6 +225,12 @@ export interface ContractRow {
   created_by_name: string | null;
   created_at: string;
   updated_at: string;
+  customer_email?: string | null;
+  signed_by_name?: string | null;
+  signed_by_title?: string | null;
+  signed_at?: string | null;
+  /** PNG data URL drawn by the customer when signing online. */
+  signature_image?: string | null;
 }
 
 export interface ContractHistoryRow {
